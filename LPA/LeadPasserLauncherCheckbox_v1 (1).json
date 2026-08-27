@@ -1,0 +1,252 @@
+{
+  "actionCalls": [
+    {
+      "actionName": "N8nNotificationServiceLeadPasser",
+      "actionType": "apex",
+      "connector": null,
+      "dataTypeMappings": [
+        {
+          "processMetadataValues": [],
+          "typeName": "T__record",
+          "typeValue": "Lead"
+        }
+      ],
+      "description": null,
+      "elementSubtype": null,
+      "faultConnector": null,
+      "flowTransactionModel": "Automatic",
+      "inputParameters": [
+        {
+          "name": "record",
+          "processMetadataValues": [],
+          "value": {
+            "apexValue": null,
+            "booleanValue": null,
+            "dateTimeValue": null,
+            "dateValue": null,
+            "elementReference": "getLead",
+            "formulaDataType": null,
+            "formulaExpression": null,
+            "numberValue": null,
+            "setupReference": null,
+            "setupReferenceType": null,
+            "sobjectValue": null,
+            "stringValue": null
+          }
+        }
+      ],
+      "label": "SendTon8n",
+      "locationX": 0,
+      "locationY": 0,
+      "name": "SendTon8n",
+      "nameSegment": "N8nNotificationServiceLeadPasser",
+      "outputConfigParams": [],
+      "outputParameters": [],
+      "processMetadataValues": [],
+      "storeOutputAutomatically": null,
+      "versionSegment": null
+    }
+  ],
+  "apexPluginCalls": [],
+  "apiVersion": 65,
+  "assignments": [],
+  "choices": [],
+  "collectionProcessors": [],
+  "constants": [],
+  "decisions": [],
+  "description": "Triggered via Launch Lead Passing Automation Ischanged=TRUE",
+  "dynamicChoiceSets": [],
+  "environments": [
+    "Default"
+  ],
+  "exitRules": [],
+  "formulas": [],
+  "interviewLabel": "LeadPasserLauncherCheckbox {!$Flow.CurrentDateTime}",
+  "isAdditionalPermissionRequiredToRun": null,
+  "isOverridable": null,
+  "isTemplate": null,
+  "label": "LeadPasserLauncherCheckbox",
+  "loops": [],
+  "migratedFromWorkflowRuleName": null,
+  "orchestratedStages": [],
+  "overriddenFlow": null,
+  "processMetadataValues": [
+    {
+      "name": "BuilderType",
+      "value": {
+        "apexValue": null,
+        "booleanValue": null,
+        "dateTimeValue": null,
+        "dateValue": null,
+        "elementReference": null,
+        "formulaDataType": null,
+        "formulaExpression": null,
+        "numberValue": null,
+        "setupReference": null,
+        "setupReferenceType": null,
+        "sobjectValue": null,
+        "stringValue": "LightningFlowBuilder"
+      }
+    },
+    {
+      "name": "CanvasMode",
+      "value": {
+        "apexValue": null,
+        "booleanValue": null,
+        "dateTimeValue": null,
+        "dateValue": null,
+        "elementReference": null,
+        "formulaDataType": null,
+        "formulaExpression": null,
+        "numberValue": null,
+        "setupReference": null,
+        "setupReferenceType": null,
+        "sobjectValue": null,
+        "stringValue": "AUTO_LAYOUT_CANVAS"
+      }
+    },
+    {
+      "name": "OriginBuilderType",
+      "value": {
+        "apexValue": null,
+        "booleanValue": null,
+        "dateTimeValue": null,
+        "dateValue": null,
+        "elementReference": null,
+        "formulaDataType": null,
+        "formulaExpression": null,
+        "numberValue": null,
+        "setupReference": null,
+        "setupReferenceType": null,
+        "sobjectValue": null,
+        "stringValue": "LightningFlowBuilder"
+      }
+    }
+  ],
+  "processType": "AutoLaunchedFlow",
+  "recordCreates": [],
+  "recordDeletes": [],
+  "recordLookups": [
+    {
+      "assignNullValuesIfNoRecordsFound": false,
+      "connector": {
+        "isGoTo": null,
+        "processMetadataValues": [],
+        "targetReference": "SendTon8n"
+      },
+      "description": null,
+      "elementSubtype": null,
+      "faultConnector": null,
+      "filterLogic": "and",
+      "filters": [
+        {
+          "field": "Id",
+          "operator": "EqualTo",
+          "processMetadataValues": [],
+          "value": {
+            "apexValue": null,
+            "booleanValue": null,
+            "dateTimeValue": null,
+            "dateValue": null,
+            "elementReference": "$Record.Id",
+            "formulaDataType": null,
+            "formulaExpression": null,
+            "numberValue": null,
+            "setupReference": null,
+            "setupReferenceType": null,
+            "sobjectValue": null,
+            "stringValue": null
+          }
+        }
+      ],
+      "getFirstRecordOnly": true,
+      "label": "getLead",
+      "locationX": 0,
+      "locationY": 0,
+      "name": "getLead",
+      "object": "Lead",
+      "outputAssignments": [],
+      "outputReference": null,
+      "processMetadataValues": [],
+      "queriedFields": null,
+      "sortField": null,
+      "sortOrder": null,
+      "storeOutputAutomatically": true
+    }
+  ],
+  "recordRollbacks": [],
+  "recordUpdates": [],
+  "runInMode": null,
+  "screens": [],
+  "sourceTemplate": null,
+  "start": {
+    "connector": null,
+    "description": null,
+    "doesRequireRecordChangedToMeetCriteria": null,
+    "elementSubtype": null,
+    "filterFormula": null,
+    "filterLogic": "and",
+    "filters": [
+      {
+        "field": "Launch_Lead_Passing_Automation__c",
+        "operator": "IsChanged",
+        "processMetadataValues": [],
+        "value": {
+          "apexValue": null,
+          "booleanValue": true,
+          "dateTimeValue": null,
+          "dateValue": null,
+          "elementReference": null,
+          "formulaDataType": null,
+          "formulaExpression": null,
+          "numberValue": null,
+          "setupReference": null,
+          "setupReferenceType": null,
+          "sobjectValue": null,
+          "stringValue": null
+        }
+      }
+    ],
+    "label": null,
+    "locationX": 0,
+    "locationY": 0,
+    "name": null,
+    "object": "Lead",
+    "objectContainer": null,
+    "processMetadataValues": [],
+    "recordTriggerType": "Update",
+    "schedule": null,
+    "scheduledPaths": [
+      {
+        "connector": {
+          "isGoTo": null,
+          "processMetadataValues": [],
+          "targetReference": "getLead"
+        },
+        "description": null,
+        "label": null,
+        "maxBatchSize": null,
+        "name": null,
+        "offsetNumber": null,
+        "offsetUnit": null,
+        "pathType": "AsyncAfterCommit",
+        "processMetadataValues": [],
+        "recordField": null,
+        "timeSource": null
+      }
+    ],
+    "segment": null,
+    "triggerType": "RecordAfterSave"
+  },
+  "startElementReference": null,
+  "status": "Active",
+  "steps": [],
+  "subflows": [],
+  "textTemplates": [],
+  "timeZoneSidKey": null,
+  "transforms": [],
+  "triggerOrder": null,
+  "urls": null,
+  "variables": [],
+  "waits": []
+}

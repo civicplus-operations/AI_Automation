@@ -1,0 +1,3497 @@
+{
+  "name": "LPA Production - RR Rollout",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "lpa",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -6496,
+        -176
+      ],
+      "id": "6babf559-946e-448f-8608-b69979cf88f0",
+      "name": "Webhook",
+      "webhookId": "2e0c9b89-9621-4538-aaa7-42fc16ffe35c"
+    },
+    {
+      "parameters": {
+        "endpointUrl": "https://fcmcp.civicplusai.solutions/mcp",
+        "include": "selected",
+        "includeTools": [
+          "firecrawl_scrape",
+          "firecrawl_search"
+        ],
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        -3216,
+        960
+      ],
+      "id": "d7c61eea-82f0-4e21-bdab-4d61e61f6cca",
+      "name": "Web MCP"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-haiku-4.5",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -2320,
+        1120
+      ],
+      "id": "f6d93b93-f844-49c4-ba3f-d3f07a1a21c7",
+      "name": "Claude Haiku",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KTgj0Hs61huy8abq",
+          "name": "OpenRouter AIE:LPA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"action\": {\n      \"type\": \"string\"\n    },\n    \"reasoning\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"reason\": {\n      \"type\": \"string\"\n    },\n    \"ids\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"parent_account\": {\n          \"type\": \"string\"\n        },\n        \"target_account\": {\n          \"type\": \"string\"\n        },\n        \"related_opportunity\": {\n          \"type\": \"string\"\n        },\n        \"related_engagement_record\": {\n          \"type\": \"string\"\n        },\n        \"contact\": {\n          \"type\": \"string\"\n        },\n        \"related_product_instance\": {\n          \"type\": \"string\"\n        },\n        \"engagement_record_needs_closing\": {\n          \"type\": \"string\"\n        }\n      }\n    },\n    \"contact_updates\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"Phone\": {\n          \"type\": \"string\"\n        },\n        \"Secondary_Email_Address__C\": {\n          \"type\": \"string\"\n        },\n        \"Email\": {\n          \"type\": \"string\"\n        }\n      }\n    }\n  },\n  \"required\": [\n    \"action\",\n    \"reasoning\",\n    \"reason\",\n    \"ids\",\n    \"contact_updates\"\n  ]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        304,
+        1040
+      ],
+      "id": "8efec2b0-6189-484b-94a7-761c46d10a6b",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -6512,
+        48
+      ],
+      "id": "ee567669-7d4e-466a-812f-a1c02d1fb115",
+      "name": "Lead"
+    },
+    {
+      "parameters": {
+        "collection": "lpa",
+        "options": {},
+        "query": "={ \"leadId\": \"{{ $('Vars').item.json.leadId }}\" }"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        -4016,
+        -800
+      ],
+      "id": "b3a95747-adce-469d-83c1-f7a96b570fd0",
+      "name": "Cached Lead",
+      "alwaysOutputData": true,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "689f85e8-4f03-4b63-a20f-c7a080200d15",
+              "leftValue": "={{ $('Cached Lead').first()?.json?.leadId || null }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3792,
+        -800
+      ],
+      "id": "0dfef62e-a816-4add-9ad1-4cb4983c90d5",
+      "name": "ifCached"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "lpa",
+        "fields": "=leadId, outcome",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        4416,
+        0
+      ],
+      "id": "59378ac4-f968-4e80-9d43-a362006c098f",
+      "name": "Cache Lead",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a4fd7ecf-fbbd-42fa-9479-9e34b184eae9",
+              "name": "outcome",
+              "value": "={{ $json.output }}",
+              "type": "object"
+            },
+            {
+              "id": "c2769735-d54a-49d5-acc0-b7718abb5f4f",
+              "name": "leadId",
+              "value": "={{ $('Get Lead').first().json.Id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4000,
+        144
+      ],
+      "id": "ad70294c-aada-4d8e-b88c-143fc981ce59",
+      "name": "LPA Outcome"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6893ab67-28e1-4a30-9fe6-61f4de87c445",
+              "name": "leadId",
+              "value": "={{ $('Cached Lead').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "519e4099-db02-43f1-a0cf-8f2cf14ab012",
+              "name": "outcome",
+              "value": "={{ $('Cached Lead').item.json.outcome }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3168,
+        -896
+      ],
+      "id": "c0903f95-111b-4a9a-9940-99f6588e09ef",
+      "name": "Cached Outcome"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5a04a201-5776-48e9-a261-0c7aacc61cfe",
+              "name": "leadId",
+              "value": "={{ $('Get Lead').first().json.Id }}",
+              "type": "string"
+            },
+            {
+              "id": "70a6acc1-45d3-497e-916b-e87646b3aca7",
+              "name": "outcome",
+              "value": "={{ $json.outcome }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4848,
+        -32
+      ],
+      "id": "d36f2e70-fb04-44c1-973a-7e24a525ca76",
+      "name": "Outcome"
+    },
+    {
+      "parameters": {
+        "resource": "search",
+        "query": "=SELECT Id, Name, Title, Company, Phone, Email, Primary_Product_Interest__c, Products_of_Interest__c, Secondary_Product_of_Interest__c, Address, What_are_they_trying_to__c, MQL_Code__c, Product_Subtype__c  FROM Lead WHERE Id = '{{ $('Vars').first().json.leadId }}'"
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        -4688,
+        32
+      ],
+      "id": "772c800d-04e9-4643-8a68-576f00460bf9",
+      "name": "Get Lead",
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "qpAKqo2RIDT7yWnl",
+          "name": "Salesforce PROD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $('Get Lead').first().json;\n\n// Collect all unique products\nconst products = [];\n\nif (lead.Primary_Product_Interest__c) {\n  products.push(lead.Primary_Product_Interest__c);\n}\n\nif (lead.Products_of_Interest__c) {\n  products.push(...lead.Products_of_Interest__c.split(';'));\n}\n\n// Remove duplicates\nconst uniqueProducts = [...new Set(products)];\n\n// Build product conditions (Primary only)\nconst productConditions = uniqueProducts\n  .map(product => `(Product_Interest__c = '${product}')`)\n  .join(' OR ');\n\nreturn {\n  productConditions,\n  allProducts: uniqueProducts.join(', ')\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3600,
+        208
+      ],
+      "id": "4b3423fb-a081-4d87-9cd5-f8e8f0b21a4c",
+      "name": "Opportunity Product Map"
+    },
+    {
+      "parameters": {
+        "model": "z-ai/glm-4.6:exacto",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -2512,
+        976
+      ],
+      "id": "f5bb336f-0ab5-4b4d-9b5f-06d6c7965be8",
+      "name": "z.ai GLM 4.6",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KTgj0Hs61huy8abq",
+          "name": "OpenRouter AIE:LPA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bbc0bae6-3883-4dc5-b87f-97de5d434820",
+              "name": "writeToSalesforce",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "80b4b55a-d1f7-4b21-bcc0-a4a3d8b0ebe8",
+              "name": "cache",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "f29e9e7b-101e-47ab-83a9-e877101950b1",
+              "name": "leadId",
+              "value": "={{ $json.Id }}",
+              "type": "string"
+            },
+            {
+              "id": "43972be7-8a8b-4241-8acb-f3e990ef4823",
+              "name": "writeContacts",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4880,
+        32
+      ],
+      "id": "e8024af7-01ad-43fb-b8de-d0befd27c1ba",
+      "name": "Vars",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "57441855-7f69-4aac-8555-4b9faba72750",
+              "leftValue": "={{ $('Vars').item.json.cache }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -4480,
+        32
+      ],
+      "id": "6e575a43-2135-4c20-b098-f29351e31a06",
+      "name": "ifCache"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e7924241-e245-4b97-b0cb-a593ed54a4d6",
+              "leftValue": "={{ $('Vars').first().json.cache }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "a497ea81-d003-42d3-878f-6ba96e5d6d02",
+              "leftValue": "={{ $json.outcome?.reason || \"\" }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4208,
+        144
+      ],
+      "id": "408a54bd-3d33-498a-8acc-43b909149e59",
+      "name": "ifSetCache"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a lead qualification specialist for a government technology sales organization. When using the available tools, ensure to match the tolls schema as specified, including all data that is shown in the schema.\n\nYour role is to determine if an inbound lead is eligible for sales engagement based on data quality, geography, organizational affiliation, and product eligibility rules.\n\nYou must output a JSON object following this exact schema with no code blocks or markdown. Do not add a wrapper field like 'output' or 'result', return this exact schema:\n\n{\n  \"action\": \"ACTION_VALUE\", \n\"reasoning\": [\"array of reasoning steps with specific details and any Salesforce IDs found\"],\n  \"reason\": \"brief summary of decision\",\n  \"ids\": {\n    \"parent_account\": ID string or empty string,\n    \"target_account\":  ID string or empty string,\n    \"related_opportunity\":  ID string or empty string,\n    \"related_engagement_record\": ID string or empty string,\n    \"contact\":  ID string or empty string,\n    \"related_product_instance\":  ID string or empty string,\n    \"engagement_record_needs_closing\":  ID string or empty string\n  },\n  \"contact_updates\": {\n    \"Phone\": string or empty string,\n    \"Secondary_Email_Address__C\": string or empty string,\n    \"Email\": string or empty string\n  }\n}\n\n\nAll ID fields start as empty strings and contact_updates starts as empty object.\nYour output action will be passed to the next agent if qualification succeeds.\n\nHere is the lead data:\n<lead>\n{{ JSON.stringify({...$('Get Lead').first().json, attributes: \"\", allProductsOfInterest: $('Opportunity Product Map').first().json.allProducts }) }}\n</lead>\n\nExecute these sequential qualification steps:\n---\nSTEP ONE DATA VALIDITY\n\nCheck that Lead has at least one of Lead.Email or Lead.Phone.\nEnsure the Lead.Email or Lead.Phone appear legitimate, and are not garbage or test data.\nIf Lead.Email exists verify it is syntactically valid.\nIf email is invalid AND no phone exists set action to UNQUALIFIED_BAD_DATA and stop.\nInclude in reasoning which data elements were checked and their validity status.\n---\nSTEP TWO GEOGRAPHY\n\nDetermine country from Lead.Address fields or infer from email domain TLD when address unavailable or infer from phone area code, or use a mix of all three. If the lead title or company seems location related, use that but consider it a weaker signal.\nIf address doesnt include city or state, try to infer from area code.\n\nAttempt to get a high confidence of location by using a mixture of location related data. If there is not a mixture of data to support location or data is conflicting and uncertain, you can mark the lead as PAUSE_AT_WORKING_STATUS.\n\nIf country is outside US or Canada set action to UNQUALIFIED_GEOGRAPHY and stop.\nIf Canada is detected note this for Step Four product gating.\nInclude in reasoning the country determination method and result.\n---\nSTEP THREE ORGANIZATIONAL AFFILIATION\n\nDetermine if lead is affiliated with qualifying organization type using two-phase approach.\n\n- PHASE A HEURISTIC ANALYSIS\nExamine Lead.Email domain and Lead.Company name for fast classification patterns.\n\nGOVERNMENT indicators include domains containing .gov, .us, or patterns like cityname.state.xx.us or countyname.state.xx.us, and company names containing City of, County of, Town of, Village of, Borough of, Sheriff, Police Department, Fire Department, Public Works, or similar government entity names.\n\nEDUCATION K12 indicators include domains with .k12 in them or company names with School District, Public Schools, Elementary School, Middle School, High School, or Department of Education at local or state level.\n\nEDUCATION HIGHER ED indicators include .edu domains or recognizable university and college names.\n\nHEALTHCARE PUBLIC indicators include County Hospital, Public Health Department, State \nHealth Department, City Health Services, or similar public healthcare entity names.\n\nHEALTHCARE PRIVATE indicators include private hospital names, private practice clinics, or commercial healthcare without government affiliation.\n\nCOMMERCIAL indicators include generic domains like gmail.com, yahoo.com, outlook.com, company domains that are clearly commercial businesses, or lack of government or education indicators.\n\nAfter heuristic analysis if classification is GOVERNMENT or EDUCATION K12 with high confidence proceed to decision phase.\n\nIf classification is ambiguous or uses generic email domain proceed to Phase B.\n\n- PHASE B WEB VERIFICATION\n\nWhen heuristic analysis cannot confirm government or education affiliation with high confidence use web search to verify.\n\nIf heuristics show STRONG government or education pointers like partial domain matches or suggestive company names perform lighter verification with one or two targeted searches.\n\nIf heuristics show WEAK pointers or only generic email domains perform thorough verification with multiple search patterns.\n\nDo not use generic people finding sites like whitepages, beenverified, or socialcatfish.\n\nOnly use data directly from the lead for searches, do no try to infer city, company, or state. Web searched should be used for verification, not for finding additional data. If a web search verifys affiliation, do not perform further searches.\n\nSearch patterns to attempt based on confidence level include:\n- search for Lead.Name plus Lead.Company\n- search for Lead.Company plus city and state, \n- search for Lead.Name plus Lead.Company\nAdd site filters like site:.gov or site:.us or site:.k12 or site:.edu to narrow results if applicable\n- search for Lead.Company plus terms like government or official or department. If Lead.Name is found on LinkedIn it can also be used for affiliation.\n\nAccept as verification: official government website pages listing the contact, school or university staff directories, public RFP or procurement pages, verifiable organization websites with .gov or .edu domains, news articles or official documents confirming government or education affiliation.\n\nIf web verification CONFIRMS government or K12 education proceed to decision phase.\n\nIf web verification CONFIRMS commercial or private entity proceed to decision phase.\n\nIf other government affiliation pointers are strong and web verification is attempted thoroughly but CANNOT CONFIRM affiliation set action to PAUSE_AT_WORKING_STATUS for human review.\n\nIf government affiliation pointers are weak and web verification is attempted thoroughly but CANNOT CONFIRM any affiliation set action to UNQUALIFIED_NO_ORG_VERIFICATION and stop.\n\n- PHASE C DECISION\n\nBased on heuristic and web verification results classify lead organization type as one of: GOVERNMENT QUALIFIED, EDUCATION K12 QUALIFIED, EDUCATION HIGHER ED QUALIFIED CONDITIONAL, COMMERCIAL NOT QUALIFIED, PRIVATE HEALTHCARE NOT QUALIFIED UNLESS PRODUCT ALLOWS, AFFILIATION UNVERIFIABLE.\n\nInclude in reasoning the classification process, specific indicators found, web searches performed if any and their outcomes, and final organization type determination.\n---\nSTEP FOUR PRODUCT GATING\n\nExamine all of the leads products of interest to determine product eligibility combined with organization type from Step Three.\n\nIf Lead is CANADA from Step Two apply Canada specific rules: only pass for products NextRequest, ArchiveSocial, SeeClickFix, and CivicEngage.\n\nFor Accessibility product in Canada only AudioEye can be sold directly and Monsido must be referred to partner Acquia so set action to UNQUALIFIED_PRODUCT_PARTNER.\n\nAll other products for Canada leads set action to UNQUALIFIED_GEOGRAPHY.\n\nIf Lead is US apply these product rules by organization type:\n\nArchiveSocial product is allowed for GOVERNMENT and COMMERCIAL and EDUCATION organizations, if organization is COMMERCIAL and product is ArchiveSocial then QUALIFIED proceed.\n\nACCESSIBILITY product is allowed DIRECT SALES for GOVERNMENT and EDUCATION K12 only, if organization is EDUCATION HIGHER ED or PRIVATE HEALTHCARE or COMMERCIAL then set action to UNQUALIFIED_PRODUCT_PARTNER for partner referral to Acquia. ACCESSIBILITY criteria is to be overridden if product is \"PDF ACCESSIBILITY\" PDF ACCESSIBILITY leads are allowed for all industries.\n\nCivicReady product follows same rules as Accessibility for partner referrals, if organization is not GOVERNMENT or EDUCATION K12 set action to UNQUALIFIED_PRODUCT_PARTNER for partner referral to Konexus.\n\nNextRequest product is allowed for GOVERNMENT and EDUCATION organizations.\n\nMunicode product is allowed for GOVERNMENT and COMMERCIAL organizations.\n\nNON-PROFIT organizations are acceptable for all products EXCEPT Accessibility which goes to Acquia partner and Notifications which goes to Konexus partner.\n\nALL OTHER STANDARD CIVICPLUS PRODUCTS are allowed for GOVERNMENT and EDUCATION K12 only, if organization is COMMERCIAL set action to UNQUALIFIED_COMMERCIAL_NOT_ALLOWED.\n\nInclude in reasoning the product checked, organization type applied, specific gating rule matched, and qualification decision.\n\n---\nSTEP FIVE FINAL QUALIFICATION DECISION\n\nIf all steps one through four PASS then lead is QUALIFIED set action to QUALIFIED and prepare output for next agent.\n\nIf any step FAILS set action to the specific unqualification reason from that step: \n\nUNQUALIFIED_BAD_DATA, UNQUALIFIED_GEOGRAPHY, UNQUALIFIED_NO_ORG_VERIFICATION, UNQUALIFIED_PRODUCT_PARTNER, UNQUALIFIED_COMMERCIAL_NOT_ALLOWED.\n\nIf at any point during Steps One through Three excluding affiliation verification the analysis is uncertain and cannot determine qualification, set action to PAUSE_AT_WORKING_STATUS.\n\nFor affiliation verification in Step Three if web verification cannot confirm after thorough search based on pointer strength then always UNQUALIFY with UNQUALIFIED_NO_ORG_VERIFICATION rather than pausing.\n\nIn reasoning array include detailed step by step analysis: what was checked in each step, what values or patterns were found, what rules were applied, which searches were performed if any, what results were obtained, and how each step contributed to final decision.\n\nInclude specific field values examined like Lead.Email domain, Lead.Company name, Lead.Primary_Product_Interest__c value.\n\nThe reason field should be a single concise sentence summarizing why this qualification decision was reached.\n\nAll ids fields remain empty strings in qualification agent output as no Salesforce relationship searches are performed yet.\n\nOutput only the JSON object with no surrounding text, code blocks, or markdown formatting.\n\nWhen using any Firecrawl tool, it is CRITICAL that you adhere PERFECTLY to the provided schema for that tool. Do not deviate, add, remove, or modify any parameters or their types unless explicitly stated as optional.\n\nWhen using firecrawl_scrape:\n\nThe url field is REQUIRED and must be a string representing a valid URL.\nThe formats field is optional and must be an array of strings (e.g., [\"markdown\"]). If provided, it must be a valid array.\nThe onlyMainContent field is optional and must be a boolean.\nThe waitFor field is optional and must be an integer.\nThe timeout field is optional and must be an integer.\nThe mobile field is optional and must be a boolean.\nThe includeTags field is optional and must be an array of strings.\nThe excludeTags field is optional and must be an array of strings.\nThe skipTlsVerification field is optional and must be a boolean.\nWhen using firecrawl_search:\n\nThe query field is REQUIRED and must be a string representing your search query.\nThe limit field is optional and must be an integer.\nThe lang field is optional and must be a string (e.g., \"en\").\nThe country field is optional and must be a string (e.g., \"us\").\nThe scrapeOptions field is optional and must be an object. If provided, it can contain formats (array of strings) and onlyMainContent (boolean) as sub-fields. Do not include scrapeOptions if you don't intend to scrape, and if you do, ensure its internal schema is also strictly followed.\n",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "maxIterations": 60
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -3376,
+        208
+      ],
+      "id": "3b92dcef-acfd-4f78-a6e3-86b3b3cdecc5",
+      "name": "LPA Agent - Qualification",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a Salesforce data relationship specialist. When using the available tools, ensure to match the tolls schema as specified, including all data that is shown in the schema.\n\nYour role is to find existing Contacts, Accounts, and their relationships for an inbound lead using Salesforce SOQL and SOSL queries.\nYou receive a JSON input from the qualification agent containing the qualification decision and lead data.\n\nYou must output a JSON object following this exact schema with no code blocks or markdown. Do not add a wrapper field like 'output' or 'result', return this exact schema:\n\n{\n  \"action\": \"ACTION_VALUE\", \n\"reasoning\": [\"array of reasoning steps with specific details and any Salesforce IDs found\"],\n  \"reason\": \"brief summary of decision\",\n  \"ids\": {\n    \"parent_account\": ID string or empty string,\n    \"target_account\":  ID string or empty string,\n    \"related_opportunity\":  ID string or empty string,\n    \"related_engagement_record\": ID string or empty string,\n    \"contact\":  ID string or empty string,\n    \"related_product_instance\":  ID string or empty string,\n    \"engagement_record_needs_closing\":  ID string or empty string\n  },\n  \"contact_updates\": {\n    \"Phone\": string or empty string,\n    \"Secondary_Email_Address__C\": string or empty string,\n    \"Email\": string or empty string\n  }\n}\n\n\nIf the input action from the qualification agent is any UNQUALIFIED or PAUSE_AT_WORKING_STATUS action, then pass it through unchanged with no additional relationship searches and output immediately.\n\nOnly perform relationship searches if the input action is QUALIFIED.\n\n<lead>\n{{ JSON.stringify({...$('Get Lead').first().json, attributes: \"\", allProductsOfInterest: $('Opportunity Product Map').first().json.allProducts }) }}\n</lead>\n\n<previous agent>\n{{ JSON.stringify($('LPA Agent - Qualification').first().json) }}\n</previos agent>\n\n---\nCONTACT ATTACHMENT\n\nYour relationship search process uses multiple methods in priority order to find existing Contact. If you find a contact record, the \"accountId\" will be the PARENT ACCOUNT ID.\n\nMETHOD ONE: PRIMARY EMAIL MATCH\n- If the email appears to be a single persons email, not a group email (like admin, info, etc.):\nQuery the Contact object where Email equals Lead.Email.\nSOQL pattern: \nSELECT Id, AccountId, Email, Phone, MobilePhone, Name FROM Contact WHERE Email equals lead email value.\nThe AccountId on a contact is the PARENT ACCOUNT ID.\nIf an exact match is found, record the Contact Id and ParentAccountId in the ids object.\n\n- If the email appears to be a group email (like admin, info, etc.):\nQuery the Contact object where Email equals Lead.Email but also check for Name similarity, using both first and last.\nSOQL pattern: \nSELECT Id, AccountId, Email, Phone, MobilePhone, Name FROM Contact WHERE Email equals lead email value.\nThe AccountId on a contact is the PARENT ACCOUNT ID.\nIf a match is found, record the Contact Id and ParentAccountId in the ids object.\n\nIf no primary email match is found, proceed to Method Two.\n\nMETHOD TWO: ALTERNATE IDENTIFIER MATCHING\n\nTry multiple alternate matching strategies in sequence. The AccountId on a contact is the PARENT ACCOUNT ID.\n\nSTRATEGY A: SECONDARY EMAIL\nIf the Lead has secondary email fields or alternate emails, query Contact WHERE Email IN list of alternate emails OR Secondary_Email__c IN list of alternate emails.\nIf a match is found, record the Contact Id and AccountId and stop alternate matching. \n\nSTRATEGY B: PHONE MATCHING\nNormalize Lead.Phone by removing formatting characters.\nQuery Contact WHERE Phone equals normalized lead phone OR MobilePhone equals normalized lead phone. Ensure the name fields match before considering this a match.\nIf a match is found, record the Contact Id and AccountId and stop alternate matching. Ensure to use the LIKE clause to avoid any formatting conflicts.\nSOQL:\nPhone LIKE '%[First three digits]%[Second Three Digits]%[Last Digits]%'\n\nSTRATEGY C: NAME AND COMPANY SOSL SEARCH\nUse SOSL to search for Lead.Name in Name fields, returning a Contact object with Id, Name, Email, AccountId, and Phone. Try with first and last name if there appears to be using initials or shortened names.\nSeparately, use SOSL to search for Lead.Company or Lead.Email domain in all fields, returning a Contact object.\nTry to find a matching contact from these SOSL searches, but ensure you have high confidence before confirming the existing contact.\n\nSTRATEGY D: EMAIL DOMAIN AND ACCOUNT CORRELATION\nExtract the domain from Lead.Email.\nQuery the Account object WHERE Website LIKE %lead email domain%. If your Salesforce has a Known_Domains__c field, also include OR Known_Domains__c LIKE %lead email domain%.\nCollect Account Ids from domain matches.\nQuery Contact WHERE AccountId IN collected Account Ids, returning Id, Name, Email, AccountId, and Phone.\n\nCombine Contact results from all alternate strategies above.\n\nInclude in your reasoning the email match found, Contact Id, ParentAccountId, and any email handling decisions.\n\nNOTE ON ACCOUNTS: When identifying accounts, exclude any accounts with recordtype.name of Prospect or Customer. \n\nDISAMBIGUATION PROCESS\n\nIf multiple potential Contact matches are found from alternate strategies, apply disambiguation logic. If you find a contact record, the \"accountId\" will be the PARENT ACCOUNT ID.\n\nPriority ranking is:\n\nEmail match with matching name (highest priority).\nPhone match with matching name (second priority).\nSame Account plus strong name similarity (third priority).\n\nStrong name similarity means Lead.Name matches Contact.Name with at least two name parts matching, allowing for common nicknames or middle name differences.\n\nRequire at least TWO independent attributes to align before confirming a match (e.g., same Account AND similar name, or similar name AND matching phone).\n\nCompare each potential Contact match against Lead data for alignment. Check if the matched Contact's AccountId organization name reasonably aligns with the Lead.Company name, allowing for abbreviations or department variations.\n\nIf an Account name seems completely unrelated to the Lead.Company stated organization, add a reasoning note about the mismatch and lower the confidence in that match.\n\nSelect the single best match based on priority ranking and attribute alignment.\n\nIf confidence is low on all potential matches after applying disambiguation (meaning no match has two strong aligned attributes or the Account organization seems unrelated), then set action to PAUSE_AT_WORKING_STATUS and include in the reasoning why matches were ambiguous and what conflicts existed.\n\nIf no matches are found at all from any method, then no Contact or Account relationship exists. Set contact_id and target_account_id to empty strings, include in reasoning that no existing Contact was found, and prepare for the outcome agent to handle new Contact creation.\n\nIf a Contact match is confirmed, include in the reasoning which method found the match, the specific Contact Id, the ParentAccountId, any disambiguation performed, and the confidence level in the match.\n\n---\nACCOUNT HIERARCHY RESOLUTION\n\nOnce the parent account is identified from the Contact, query the Account object for the AccountId, ParentAccount__c, and Segment__c fields.\n\nSOQL pattern: \nSELECT Id, Name, ParentAccount__c, Website, Industry_Segmentation__c, Segment__c FROM Account WHERE Id equals parent account id.\n\nCheck the Account.Segment__c field; if it equals \"EGM-Named\", note this in the reasoning as it may affect routing. Add a specific reasoning line \"THE PARENT ACCOUNT IS EGM-NAMED\".\nCheck the Account.Industry_Segmentation__c field; if it contains \"State\" or similar values showing that it is a top level US State account, note this in the reasoning as State accounts have special routing rules. Add a specific reasoning line \"THE PARENT ACCOUNT IS A STATE ACCOUNT\".\n\n---\nTARGET AGENCY ACCOUNT RESOLUTION\n\nWith a found parent account, find the most appropriate target agency to relate the record to. Based on the list of target agencies from the SOQL query, use lead heuristics to assiciate the best possible agency.\n\nSOQL pattern:\nSELECT Id, Name, Phone, Website \nFROM Account \nWHERE ParentId = parent account id\nAND recordtype.name = 'Target Agency'\nORDER BY Name\n\n---\nDATA HYGIENE RECOMMENDATIONS\n\nIf a Contact match was found and email handling is needed, populate the contact_updates object with field name keys and recommended values.\n\nCheck if Lead.Email is a personal email domain like gmail.com, yahoo.com, outlook.com, hotmail.com, or similar.\n\nIf Lead used a personal email but the matched Contact has a government or education domain email in the Email field, then do NOT overwrite the Contact email. Instead, note in the contact_updates object that the Lead.Email personal email should be stored in the Secondary_Email__c field on the Contact.\n\nIf the Lead has a government or education email and it matches the Contact Email, then no updates are needed.\n\nIf the Lead has a personal email and the Contact has a government email, recommend: Email field keeps the government email value, Secondary_Email__c field gets the personal email value.\n\nIf the Lead has a government email that differs from the Contact's current email, evaluate which is more authoritative and recommend an update if the Lead's email is newer or more accurate.\n\nDo not recommend changing the Contact AccountId field unless there is extremely clear evidence the Contact has moved to a different organization, which is rare.\n\nIf a new Contact needs to be created on an existing Account (due to a different person at the same organization), note this in the reasoning but do not change AccountId recommendations.\n\nInclude in your reasoning any contact update recommendations made and why.\n\nVALIDATION\n\nDouble check that all SFDC IDs identified are valid and correct for the intended entity using SOQL. If any are invalid, double check that an incorrect value has not been hallucinated. This step must be executed each time.\n\nFINAL RELATIONSHIPS OUTPUT\n\nThe action field in the output should be QUALIFIED if the input lead was QUALIFIED, a contact was found, and the relationship search completed.\nThe action field should be CREATE_NEW_CONTACT_NO_MATCH if an account was found but no contact exists\nThe action field should be PAUSE_AT_WORKING_STATUS if disambiguation failed, or a pass-through of any unqualified or pause action from the input.\n\nThe reasoning array must include: each matching method attempted, SOQL and SOSL queries described (without full query text), results found with specific Contact Ids and Account Ids, disambiguation logic applied if there were multiple matches, confidence assessment in the selected match, account hierarchy resolution results with parent and target Ids, any data hygiene recommendations, and why no match was found, if applicable.\nThe ids object must have: contact field with Contact Id if found (or empty string), target_account field with immediate Account Id if found (or empty string), parent_account field with ParentAccount__c value or the same as the target if no parent (or empty string). related_opportunity and related_engagement_record remain empty strings, as those are found by the outcome agent.\nThe contact_updates object has email field name keys and recommended values if updates are needed, or remains an empty object.\nThe reason field is a brief summary of the relationship search outcome.\nOutput only the JSON object with no surrounding text, code blocks, or markdown formatting.",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "maxIterations": 60
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -2304,
+        208
+      ],
+      "id": "bf89bc30-c526-4b7e-9f7e-48f53c2992a4",
+      "name": "LPA Agent - Relationships",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "qwen3-next-80b-a3b-instruct-mlx",
+          "mode": "list",
+          "cachedResultName": "qwen3-next-80b-a3b-instruct-mlx"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -4064,
+        960
+      ],
+      "id": "ee768192-5a37-4665-b467-8e533276f17c",
+      "name": "Qwen3 - LM",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "endpointUrl": "https://sfmcp.civicplusai.solutions/mcp",
+        "authentication": "bearerAuth",
+        "include": "selected",
+        "includeTools": [
+          "run_sosl",
+          "run_soql",
+          "get_salesforce_object_schema"
+        ],
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        1264
+      ],
+      "id": "f6ac4bb6-5014-4fb9-aaa4-2887e620f552",
+      "name": "PRODUCTION Salesforce MCP",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "FnQKTjgMbHyRhfaz",
+          "name": "SFMCP Bearer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1SYAhL-n2A67_kDS5iZ8eRFdPbk6_dp75307OESwqgho",
+          "mode": "list",
+          "cachedResultName": "LPA-PROD",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SYAhL-n2A67_kDS5iZ8eRFdPbk6_dp75307OESwqgho/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "LPA",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SYAhL-n2A67_kDS5iZ8eRFdPbk6_dp75307OESwqgho/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Id": "={{ $('Outcome').first().json.leadId }}",
+            "Output": "={{ $('Outcome').first().json.outcome.action }}",
+            "Reasoning": "={{ $('Outcome').first().json.outcome.reasoning.join('\\n\\n') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Id",
+              "displayName": "Id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Output",
+              "displayName": "Output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reasoning",
+              "displayName": "Reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        8400,
+        0
+      ],
+      "id": "9a3d0f6a-2551-4503-be40-d3325f8baf94",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "c3J8zwCMhjGYT8bp",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f6d38e69-fe8b-4241-8928-a28d47a35140",
+              "name": "=Id",
+              "value": "={{ $('Webhook').first().json.query.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5104,
+        -192
+      ],
+      "id": "82beb7ea-bcfe-494e-af1d-83db1bbec4ba",
+      "name": "Webhook Id"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d9ed61aa-8cf2-46ef-b07d-c4d6c01c6473",
+              "leftValue": "={{ $('LPA Agent - Relationships').first().json.output.action }}",
+              "rightValue": "=CREATE_NEW_CONTACT_NO_MATCH",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "d956189f-9a7b-4934-9fa6-1815e615812c",
+              "leftValue": "={{ $('Vars').first().json.writeContacts }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1344,
+        208
+      ],
+      "id": "587a2c04-adf6-4e3d-886b-b057cd4779b8",
+      "name": "ShouldCreateContact"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1215e25b-f9c8-45a2-a0de-6a48f9b2fef3",
+              "leftValue": "={{ $('LPA Agent - Relationships').first().json.output.ids.parent_account }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "6d7ba691-984e-4190-ac8b-5c306aa368b3",
+              "leftValue": "={{ $('LPA Agent - Relationships').first().json.output.ids.target_account }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1136,
+        112
+      ],
+      "id": "271edff0-a6c0-432d-88e4-aa704882107b",
+      "name": "ContactFieldExists"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "96789aeb-a43d-4eb8-b944-177bf397151b",
+              "name": "output",
+              "value": "={{ {...$('LPA Agent - Relationships').first().json.output, action: \"PAUSE_AT_WORKING_STATUS\", reason: \"CREATE CONTACT but no account or target agency found.\"} }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -464,
+        96
+      ],
+      "id": "f20f2e3e-d159-4fea-9b9a-ab8fc0bb03e2",
+      "name": "Missing Fields"
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "lastname": "={{ $('Get Lead').first().json.Name.split(' ')[1] }}",
+        "additionalFields": {
+          "acconuntId": "={{ $('LPA Agent - Relationships').first().json.output.ids.parent_account }}",
+          "email": "={{ $('Get Lead').first().json.Email }}",
+          "firstName": "={{ $('Get Lead').first().json.Name.split(' ')[0] }}",
+          "phone": "={{ $('Get Lead').first().json.Phone }}",
+          "title": "={{ $('Get Lead').first().json.Title }}"
+        }
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        -672,
+        -64
+      ],
+      "id": "f6a96687-b3f1-4fb1-878d-d47c7354b96c",
+      "name": "Create a contact",
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "qpAKqo2RIDT7yWnl",
+          "name": "Salesforce PROD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aacdec99-f376-42a8-961a-48409ab6eb12",
+              "name": "output",
+              "value": "={{ {...$('LPA Agent - Relationships').first().json.output, \"ids\": {...$('LPA Agent - Relationships').first().json.output.ids,\ncontact: $('Create a contact').first().json.id,\naction: \"QUALIFIED\"\n}\n} }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -288,
+        -64
+      ],
+      "id": "ba6f513c-f6e8-434c-bbb1-c40fbff26634",
+      "name": "ContactIdMap"
+    },
+    {
+      "parameters": {
+        "resource": "customObject",
+        "customObject": "=AccountContactRelation",
+        "customFieldsUi": {
+          "customFieldsValues": [
+            {
+              "fieldId": "AccountId",
+              "value": "={{ $('LPA Agent - Relationships').first().json.output.ids.target_account }}"
+            },
+            {
+              "fieldId": "ContactId",
+              "value": "={{ $json.id }}"
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        -64
+      ],
+      "id": "b6e877f1-61ff-425e-9e07-39b7e6607e27",
+      "name": "Update ACR",
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "qpAKqo2RIDT7yWnl",
+          "name": "Salesforce PROD"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        144,
+        192
+      ],
+      "id": "fea84ab1-34f4-496a-8e49-01b8568cce3f",
+      "name": "Consolidate Data"
+    },
+    {
+      "parameters": {
+        "resource": "flow",
+        "apiName": "PassInboundLead",
+        "variablesUi": {
+          "variablesValues": [
+            {
+              "name": "Action",
+              "value": "={{ $('Outcome').first().json.outcome.action }}"
+            },
+            {
+              "name": "contactID",
+              "value": "={{ $('Parse Output Json').first().json.output.ids.contact }}"
+            },
+            {
+              "name": "engagementrecordID",
+              "value": "={{ $('Outcome').first().json.outcome.ids.related_engagement_record }}"
+            },
+            {
+              "name": "engagementrecordtocloseID",
+              "value": "={{ $('Outcome').first().json.outcome.ids.engagement_record_needs_closing }}"
+            },
+            {
+              "name": "parentID",
+              "value": "={{ $('Parse Output Json').first().json.output.ids.parent_account }}"
+            },
+            {
+              "name": "targetagencyID",
+              "value": "={{ $('Parse Output Json').first().json.output.ids.target_account }}"
+            },
+            {
+              "name": "productinstanceId",
+              "value": "={{ $('Outcome').first().json.outcome.ids.related_product_instance }}"
+            },
+            {
+              "name": "leadID",
+              "value": "={{ $('Get Lead').first().json.Id }}"
+            },
+            {
+              "name": "opportunityID",
+              "value": "={{ $('Outcome').first().json.outcome.ids.related_opportunity }}"
+            },
+            {
+              "name": "secondaryEmailAddress",
+              "value": "={{ $('Outcome').first().json.outcome.contact_updates.Secondary_Email_Address__C }}"
+            },
+            {
+              "name": "Reason",
+              "value": "={{ $('Outcome').first().json.outcome.reason }}"
+            },
+            {
+              "name": "OwnerEmail",
+              "value": "={{ $if( $('Identify Owner').isExecuted, $('Identify Owner').first().json.assignedTo, \"\") }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        7456,
+        0
+      ],
+      "id": "8ed96332-b42f-48f3-a134-212a04a41d99",
+      "name": "Invoke a flow",
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "qpAKqo2RIDT7yWnl",
+          "name": "Salesforce PROD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataToSave": {
+          "values": [
+            {
+              "key": "leadId",
+              "value": "={{ $('Vars').first().json.leadId }}"
+            },
+            {
+              "key": "outcome",
+              "value": "={{ $('Outcome').first().json.outcome.action }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executionData",
+      "typeVersion": 1.1,
+      "position": [
+        8240,
+        0
+      ],
+      "id": "6b3ab95f-b4cd-4b39-9208-379259cc919b",
+      "name": "Execution Data"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a salesforce expert and sales routing and ownership specialist.\n\nYour role is to determine the final routing action for a lead based on existing Sales Opportunities, Engagement Records, customer status, and ownership rules.\nYou receive JSON input from the relationships agent.\n\nFollow the outline below as closely as possible. Do not make any assumptions about how things should work, stick to the outline below. When running queries, do not alter the query beyond what is needed.\n\nYou must output a JSON object following this exact schema with no code blocks or markdown. Do not add a wrapper field like 'output' or 'result', return this exact schema:\n\n{\n  \"action\": \"ACTION_VALUE\", \n\"reasoning\": [\"array of reasoning steps with specific details and any Salesforce IDs found\"],\n  \"reason\": \"brief summary of decision\",\n  \"ids\": {\n    \"parent_account\": ID string or empty string,\n    \"target_account\":  ID string or empty string,\n    \"related_opportunity\":  ID string or empty string,\n    \"related_engagement_record\": ID string or empty string,\n    \"contact\":  ID string or empty string,\n    \"related_product_instance\":  ID string or empty string,\n    \"engagement_record_needs_closing\":  ID string or empty string\n  },\n  \"contact_updates\": {\n    \"Phone\": string or empty string,\n    \"Secondary_Email_Address__C\": string or empty string,\n    \"Email\": string or empty string\n  }\n}\n\n\n<lead>\n{{ JSON.stringify({...$('Get Lead').first().json, attributes: \"\", allProductsOfInterest: $('Opportunity Product Map').first().json.allProducts }) }}\n</lead>\n\n<previous agent>\n{{ JSON.stringify($json) }}\n</previos agent>\n\nIf input lead action is any UNQUALIFIED status or the lead action is PAUSE_AT_WORKING_STATUS then pass through unchanged and output immediately with no additional searches.\n\nOnly perform ownership routing logic if input action is QUALIFIED.\n\nCopy all ids values and contact_updates values from input to output, updating and adding to them as you find related records.\n\nYour routing determination follows a specific decision tree checking conditions in order.\n\nDECISION TREE OVERVIEW - Follow this exact sequence. Details for how to execute each step are below:\nFirst, check if the request is for multiple products.\nSecond, check for existing relevant Sales Opportunity with AE or EAM owner. There is a deviation if the parent account is a STATE account (look at previous agent reasoning).\n\n---\n<CONDITION ONE: MULTIPLE PRODUCTS>\nCheck: If the lead is requesting multiple products (the current lead is requesting {{ $('Opportunity Product Map').first().json.allProducts }})\n\nAdd to the reasoning that this lead has requested multiple products.\n\nFinal action is CONTINUE_CHECKS.\n\n</CONDITION ONE>\n\n---\n<CONDITION TWO: EXISTING SALES OPPORTUNITY>\nCheck: For open Sales Opportunities at the PARENT ACCOUNT level that match the lead product. Use parent_account id from input.\n\n- IF the parent account is a not a STATE account (check the previous agents reasoning to verify)\n<if NOT STATE ACCOUNT>\nIdentify Sales Opportunity: Record_Type__c equals 'WBD Standard'.\nProduct Matching Condition:\n{{ $('Opportunity Product Map').first().json.productConditions }}\nQuery: Opportunity WHERE IsClosed equals false AND Record_Type__c equals 'WBD Standard' AND ParentAccount__c equals {{ $('Consolidate Data').first().json.output.ids.parent_account }} AND {{ $('Opportunity Product Map').first().json.productConditions }}\n</if>\n\n- ELSE (the parent account is a STATE account - meaning they're a state government organization rather than municipal)\n<else STATE ACCOUNT>\nApply exception logic: only route to this Sales Opportunity if Contact id from input matches a Contact involved in the Opportunity.\nSOQL: select ID from Opportunity where ID in (select OpportunityID from OpportunityContactRole where contactID = input contact id) and Record_Type__c = 'WBD Standard' AND ParentAccount__c equals {{ $('Consolidate Data').first().json.output.ids.parent_account }} AND {{ $('Opportunity Product Map').first().json.productConditions }}\n</else>\n\nIf MATCH FOUND - (not State account OR is State account with same Contact):\n<match found>\nSet final action to CONVERT_TO_EXISTING_SALES_OPP.\nRecord the Opportunity Id in related_opportunity field.\nInclude in reasoning: the Opportunity Id found, the owner who should be notified via email, the product match that qualified it, any State account exception applied, and that lead should be converted to a Contact on the Account without creating a new Sales Opportunity.\n</match found>\n\n\nIf NO MATCH, final action output is CONTINUE_CHECKS.\n</CONDITION TWO>\n---\n\nREASONING REQUIREMENTS\n\nYour reasoning array must include for every condition checked:\nWhich condition number or section was evaluated.\nWhat Salesforce records were found with specific Ids.\nWhy each condition did or did not match.\nWhich condition ultimately matched and why that determined the final action.\nWhat notifications or conversions are required.\nDo not include any SOSL or SOQL ran.\n\nFINAL OUTPUT REQUIREMENTS\n\nThe action field must be exactly one of these values:\nCONTINUE_CHECKS\n\nUNQUALIFIED_BAD_DATA\nUNQUALIFIED_GEOGRAPHY\nUNQUALIFIED_NO_ORG_VERIFICATION\nUNQUALIFIED_PRODUCT_PARTNER\nUNQUALIFIED_COMMERCIAL_NOT_ALLOWED\nPAUSE_AT_WORKING_STATUS\nCONVERT_TO_EXISTING_SALES_OPP\n\nThe ids object must contain:\nparent_account: Parent Account Id ({{ $('Consolidate Data').first().json.output.ids.parent_account }}) or empty string.\ntarget_account: Target Account Id ({{ $('Consolidate Data').first().json.output.ids.target_account }}) or empty string.\ncontact: Contact Id ({{ $('Consolidate Data').first().json.output.ids.contact }}) or empty string.\nrelated_opportunity: Opportunity Id if found or empty string.\nrelated_engagement_record: ER Opportunity Id if found or empty string.\n\nThe contact_updates object must contain any field name keys with update values from the relationships agent input, or remain an empty object {}.\n\nThe reason field must be a single-sentence summary of the final routing decision.\nOutput only the JSON object with no surrounding text, code blocks, or markdown formatting.\n\n",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "maxIterations": 60
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1168,
+        176
+      ],
+      "id": "1818c353-3c6b-4ee6-8b89-d47f0cd48342",
+      "name": "LPA Agent - Simple Existing",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a salesforce expert and sales routing and ownership specialist.\n\nYour role is to determine the final routing action for a lead based on existing Sales Opportunities, Engagement Records, customer status, and ownership rules.\nYou receive JSON input from the relationships agent.\n\nFollow the outline below as closely as possible. Do not make any assumptions about how things should work, stick to the outline below. When running queries, do not alter the query beyond what is needed.\n\nYou must output a JSON object following this exact schema with no code blocks or markdown. Do not add a wrapper field like 'output' or 'result', return this exact schema:\n\n{\n  \"action\": \"ACTION_VALUE\", \n\"reasoning\": [\"array of reasoning steps with specific details and any Salesforce IDs found\"],\n  \"reason\": \"brief summary of decision\",\n  \"ids\": {\n    \"parent_account\": ID string or empty string,\n    \"target_account\":  ID string or empty string,\n    \"related_opportunity\":  ID string or empty string,\n    \"related_engagement_record\": ID string or empty string,\n    \"contact\":  ID string or empty string,\n    \"related_product_instance\":  ID string or empty string,\n    \"engagement_record_needs_closing\":  ID string or empty string\n  },\n  \"contact_updates\": {\n    \"Phone\": string or empty string,\n    \"Secondary_Email_Address__C\": string or empty string,\n    \"Email\": string or empty string\n  }\n}\n\n\n<lead>\n{{ JSON.stringify({...$('Get Lead').first().json, attributes: \"\", allProductsOfInterest: $('Opportunity Product Map').first().json.allProducts }) }}\n</lead>\n\n<previous agent>\n{{ JSON.stringify($('LPA Agent - Simple Existing').first().json) }}\n</previos agent>\n\nIf input lead action is any UNQUALIFIED status or PAUSE_AT_WORKING_STATUS or CONVERT_TO_EXISTING_SALES_OPP or CREATE_NEW_CONTACT_NO_MATCH then pass through unchanged and output immediately with no additional searches.\n\nOnly perform ownership routing logic if input action is CONTINUE_CHECKS.\n\nCopy all ids values and contact_updates values from input to output, updating and adding to them as you find related records.\n\nYour routing determination follows a specific decision tree checking conditions in order.\n\nDECISION TREE OVERVIEW - Follow this exact sequence. Details for how to execute each step are below:\nFirst, check for Outbound SDR Engagement Record ownership.\nSecond, check for existing Inbound SDR Engagement Record exception.\nThird, check for existing EAM SDR Engagement Record exception.\n\nFor each step, you must run the SOQL provided - do not attempt to \"design\" your own SOQL or to consolidate steps into a single check.\n\nIf no conditions are met, set the output action to CONTINUE_CHECKS.\n\n---\n<CONDITION THREE: OUTBOUND SDR ENGAGEMENT RECORD (ER)>\n\nCheck: For Engagement Records on the TARGET AGENCY ACCOUNT level that match the lead product. Use target_account id from input.\n\nIdentify Engagement Record: \nOpportunity object where Record_Type__c equals 'Sales Engagement Record'.\nQuery: \nOpen Engagement Records on the Target Agency */\n<SELECT Id, Name, OwnerId, AccountId, Product_Interest__c, Secondary_Product_of_Interest__c, IsClosed, LastActivityDate\nFROM Opportunity\nWHERE Record_Type__c = 'Sales Engagement Record'\nAND AccountId = {{ $('Consolidate Data').first().json.output.ids.target_account }}\nAND {{ $('Opportunity Product Map').first().json.productConditions }}>\n\nIf an open Engagement Record is found, check if LastActivityDate is within 30 days from {{ DateTime.now().format('yyyy-M-dd') }} and is not null (meaning SDR has activity).\n\n- If OPEN and MATCH (open Engagement Record exists AND has activity within 30 days):\n<if open and match and activity>\nRecord Engagement Record Id in related_engagement_record field.\nInclude in reasoning: the Engagement Record Id, the Owner Id, and that the lead should be attached to the existing Engagement Record.\nSet final action to CONVERT_TO_EXISTING_ER_WITH_ACTIVITY.\nStop Evaluation here and output.\n</if open and match and activity>\n\n\n- If OPEN and MATCH (open Engagement Record exists BUT LastActivityDate is older than 30 days or is null):\n<if open and match inactive>\nRecord the Engagement Record Id in related_engagement_record field.\nInclude in reasoning: the Engagement Record Id that should be closed with Completion Reason 'Admin Completion', and that the lead should pass to Inbound SDR round robin.\nSet action to CLOSE_INACTIVE_ER_PASS_TO_INBOUND.\nStop evaluation here and output.\n</if open and match inactive>\n\n- <if CLOSED or NO MATCH, continue>\n</CONDITION THREE>\n\n\n<CONDITION FOUR: INBOUND SDR ACTIVITY EXCEPTION>\n\nQuery: \n<SELECT ID, owner.userrole.name, LastActivityDate from Opportunity WHERE Record_Type__c equals 'Sales Engagement Record' AND AccountId equals {{ $('LPA Agent - Simple Existing').first().json.output.ids.target_account }} AND owner.userrole.name like '%Inbound%' and isclosed = false> to find eligible Inbound Engagement Records.\nCheck if this most recent ER has a LastActivityDate within 30 days. Product suite does NOT have to match for this condition to be met. Only use this query to check for an Inbound SDR Engagement Record - do not attempt to query for userrole info seperately, as the query above covers that case.\n\n- If Inbound Engagement Record Identified:\n<inbound ER>\nRecord the Engagement Record Id in related_engagement_record field.\nRecord the Inbound SDR OwnerId.\nInclude in reasoning: the Engagement Record Id, the Inbound SDR owner, and that recent activity justifies reassignment to the same rep.\nSet action to ASSIGN_TO_SAME_INBOUND_SDR.\nStop evaluation here and output.\n</inbound ER>\n\n<If no Inbound Engagement Record Identified, continue>\n</CONDITION FOUR>\n\n<CONDITION FIVE:  Executive Account Manager (EAM) SDR EXCEPTION>\n\nCheck if this most recent ER has a LastActivityDate within 30 days and its OwnerId is an EAM SDR. Product suite does NOT have to match for this condition to be met. Only use this query to check for an EAM SDR Engagement Record - do not attempt to query for userrole info\n\nQuery: <SELECT ID, owner.userrole.name, LastActivityDate from Opportunity WHERE Record_Type__c equals 'Sales Engagement Record' AND AccountId equals {{ $('Consolidate Data').first().json.output.ids.target_account }} AND owner.userrole.name like '%EAM%' AND isclosed = false> to find eligible EAM SDR Engagement Records. Product alignment is NOT necessary in this step.\n\n- If EAM Engagement Record Identified:\n<EAM ER FOUND>\nRecord the Engagement Record Id in related_engagement_record field.\nSet action to ASSIGN_TO_SAME_INBOUND_SDR. (this action is acceptable for both EAM and Inbound SDRs)\nStop Evaluation here and output.\n</EAM ER FOUND>\n\n\n- <If NO MATCH on any Outbound ER or Inbound SDR activity exception: Continue>\n\n</CONDITION FIVE>\n\n\nREASONING REQUIREMENTS\n\nYour reasoning array must include for every condition checked:\nWhich condition number or section was evaluated.\nWhat Salesforce records were found with specific Ids.\nWhy each condition did or did not match.\nWhich condition ultimately matched and why that determined the final action.\nWhat notifications or conversions are required.\nDo not include any SOSL or SOQL ran.\n\nFINAL OUTPUT REQUIREMENTS\n\nIf no conditions were met, set the output action to CONTINUE_CHECKS.\n\nThe action field must be exactly one of these values:\nCONTINUE_CHECKS\nUNQUALIFIED_BAD_DATA\nUNQUALIFIED_GEOGRAPHY\nUNQUALIFIED_NO_ORG_VERIFICATION\nUNQUALIFIED_PRODUCT_PARTNER\nUNQUALIFIED_COMMERCIAL_NOT_ALLOWED\nPAUSE_AT_WORKING_STATUS\nCONVERT_TO_EXISTING_SALES_OPP\nCONVERT_TO_EXISTING_ER_WITH_ACTIVITY\nCLOSE_INACTIVE_ER_PASS_TO_INBOUND\nCREATE_NEW_ER_ASSIGN_TO_OUTBOUND_SDR\nASSIGN_TO_SAME_INBOUND_SDR\n\nThe ids object must contain:\nparent_account: Parent Account Id ({{ $('Consolidate Data').first().json.output.ids.parent_account }}) or empty string.\ntarget_account: Target Account Id ({{ $('Consolidate Data').first().json.output.ids.target_account }}) or empty string.\ncontact: Contact Id ({{ $('Consolidate Data').first().json.output.ids.contact }}) or empty string.\nrelated_opportunity: Opportunity Id if found or empty string.\nrelated_engagement_record: ER Opportunity Id if found or empty string.\n\nValidate that your final action recommendation aligns with your reasoning.\n\nThe contact_updates object must contain any field name keys with update values from the relationships agent input, or remain an empty object {}.\n\nThe reason field must be a single-sentence summary of the final routing decision.\nOutput only the JSON object with no surrounding text, code blocks, or markdown formatting.\n\n",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "maxIterations": 60
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        2048,
+        160
+      ],
+      "id": "7289e5d4-156e-4332-bd51-12a698ef9fd1",
+      "name": "LPA Agent - Existing",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "model": "z-ai/glm-4.6:exacto",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2560,
+        896
+      ],
+      "id": "1a4ed577-3474-4976-b506-0a5ec684bbfa",
+      "name": "z.ai GLM 4.",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KTgj0Hs61huy8abq",
+          "name": "OpenRouter AIE:LPA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a salesforce expert and sales routing and ownership specialist.\n\nYour role is to determine the final routing action for a lead based on existing Sales Opportunities, Engagement Records, customer status, and ownership rules.\nYou receive JSON input from the relationships agent.\n\nFollow the outline below as closely as possible. Do not make any assumptions about how things should work, stick to the outline below. When running queries, do not alter the query beyond what is needed.\n\nYou must output a JSON object following this exact schema with no code blocks or markdown. Do not add a wrapper field like 'output' or 'result', return this exact schema:\n\n{\n  \"action\": \"ACTION_VALUE\", \n\"reasoning\": [\"array of reasoning steps with specific details and any Salesforce IDs found\"],\n  \"reason\": \"brief summary of decision\",\n  \"ids\": {\n    \"parent_account\": ID string or empty string,\n    \"target_account\":  ID string or empty string,\n    \"related_opportunity\":  ID string or empty string,\n    \"related_engagement_record\": ID string or empty string,\n    \"contact\":  ID string or empty string,\n    \"related_product_instance\":  ID string or empty string,\n    \"engagement_record_needs_closing\":  ID string or empty string\n  },\n  \"contact_updates\": {\n    \"Phone\": string or empty string,\n    \"Secondary_Email_Address__C\": string or empty string,\n    \"Email\": string or empty string\n  }\n}\n\n\n<lead>\n{{ JSON.stringify({...$('Get Lead').first().json, attributes: \"\", allProductsOfInterest: $('Opportunity Product Map').first().json.allProducts }) }}\n</lead>\n\n<previous agent>\n{{ JSON.stringify($('LPA Agent - Existing').first().json) }}\n</previos agent>\n\nIf input lead action is any UNQUALIFIED status, PAUSE_AT_WORKING_STATUS, CREATE_NEW_CONTACT_NO_MATCH, CONVERT_TO_EXISTING_SALES_OPP, CONVERT_TO_EXISTING_ER_WITH_ACTIVITY, CLOSE_INACTIVE_ER_PASS_TO_INBOUND, or ASSIGN_TO_SAME_INBOUND_SDR then pass through unchanged and output immediately with no additional searches.\n\nOnly perform ownership routing logic if input action is CONTINUE_CHECKS.\n\nCopy all ids values and contact_updates values from input to output, updating and adding to them as you find related records.\n\nYour routing determination follows a specific decision tree checking conditions in order.\n\nDECISION TREE OVERVIEW - Follow this exact sequence. Details for how to execute each step are below:\nSixth, check for Current Customer product ownership scenarios.\n\n---\n<CONDITION SIX: CURRENT CUSTOMER FLOW>\n\nCheck: If the parent account owns the product the lead is requesting.\nQuery: SELECT Id, Product_Suite__c, UNI_Status__c, Account__c from Product_Instance__c WHERE Parent_Account__c = {{ $('Consolidate Data').first().json.output.ids.parent_account }} and UNI_Status__c != 'Cancellation' and UNI_Status__c != 'Professional Services Only'\n\nWe determine customer status based on Product Instances being active at the Parent account level. Do not filter your results to Product Instances related to the Target Agency/Account.\n\nFilter results to find Product_Instance records where Product_Suite__c matches or is related to the leads requested product - {{ $('Opportunity Product Map').first().json.allProducts }}\n\nNote - \"PDF Accessibility\" and \"Accessibility\" are different products.\n\n\n- IF a matching Product_Instance is found (product instance UNI_Status__c != cancellation): set final Action to: NOTIFY_CSM_EAM_CONVERT_TO_CONTACT\n\n\n\n\nREASONING REQUIREMENTS\n\nYour reasoning array must include for every condition checked:\nWhich condition number or section was evaluated.\nWhat Salesforce records were found with specific Ids.\nWhy each condition did or did not match.\nWhich condition ultimately matched and why that determined the final action.\nWhat notifications or conversions are required.\nDo not include any SOSL or SOQL ran.\n\nFINAL OUTPUT REQUIREMENTS\n\nIf no conditions were met, set the output action to CONTINUE_CHECKS.\n\nThe action field must be exactly one of these values:\nCONTINUE_CHECKS\nUNQUALIFIED_BAD_DATA\nUNQUALIFIED_GEOGRAPHY\nUNQUALIFIED_NO_ORG_VERIFICATION\nUNQUALIFIED_PRODUCT_PARTNER\nUNQUALIFIED_COMMERCIAL_NOT_ALLOWED\nPAUSE_AT_WORKING_STATUS\nCONVERT_TO_EXISTING_SALES_OPP\nCONVERT_TO_EXISTING_ER_WITH_ACTIVITY\nCLOSE_INACTIVE_ER_PASS_TO_INBOUND\nCREATE_NEW_ER_ASSIGN_TO_OUTBOUND_SDR\nASSIGN_TO_SAME_INBOUND_SDR\nNOTIFY_CSM_EAM_CONVERT_TO_CONTACT\nEMAIL_ACCOUNT_MANAGER_SALES_OPS_EXCEPTION\nCONVERT_TO_EXISTING_CUSTOMER_OPP\n\nThe ids object must contain:\nparent_account: Parent Account Id ({{ $('Consolidate Data').first().json.output.ids.parent_account }}) or empty string.\ntarget_account: Target Account Id ({{ $('Consolidate Data').first().json.output.ids.target_account }}) or empty string.\ncontact: Contact Id ({{ $('Consolidate Data').first().json.output.ids.contact }}) or empty string.\nrelated_opportunity: Opportunity Id if found or empty string.\nrelated_engagement_record: ER Opportunity Id if found or empty string.\n\nValidate that your final action recommendation aligns with your reasoning.\n\nThe contact_updates object must contain any field name keys with update values from the relationships agent input, or remain an empty object {}.\n\nThe reason field must be a single-sentence summary of the final routing decision.\nOutput only the JSON object with no surrounding text, code blocks, or markdown formatting.\n",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "maxIterations": 60
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        2704,
+        176
+      ],
+      "id": "baf68418-613d-494c-9c69-27ef8f62a08e",
+      "name": "LPA Agent - Customer",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a salesforce expert and sales routing and ownership specialist.\n\nYour role is to determine the final routing action for a lead based on existing Sales Opportunities, Engagement Records, customer status, and ownership rules.\nYou receive JSON input from the relationships agent.\n\nFollow the outline below as closely as possible. Do not make any assumptions about how things should work, stick to the outline below. When running queries, do not alter the query beyond what is needed.\n\nYou must output a JSON object following this exact schema with no code blocks or markdown. Do not add a wrapper field like 'output' or 'result', return this exact schema:\n\n{\n  \"action\": \"ACTION_VALUE\", \n\"reasoning\": [\"array of reasoning steps with specific details and any Salesforce IDs found\"],\n  \"reason\": \"brief summary of decision\",\n  \"ids\": {\n    \"parent_account\": ID string or empty string,\n    \"target_account\":  ID string or empty string,\n    \"related_opportunity\":  ID string or empty string,\n    \"related_engagement_record\": ID string or empty string,\n    \"contact\":  ID string or empty string,\n    \"related_product_instance\":  ID string or empty string,\n    \"engagement_record_needs_closing\":  ID string or empty string\n  },\n  \"contact_updates\": {\n    \"Phone\": string or empty string,\n    \"Secondary_Email_Address__C\": string or empty string,\n    \"Email\": string or empty string\n  }\n}\n\n\n<lead>\n{{ JSON.stringify({...$('Get Lead').first().json, attributes: \"\", allProductsOfInterest: $('Opportunity Product Map').first().json.allProducts }) }}\n</lead>\n\n<previous agent>\n{{ JSON.stringify($json) }}\n</previos agent>\n\nIf input lead action is any UNQUALIFIED status or PAUSE_AT_WORKING_STATUS or ASSIGN_TO_SAME_INBOUND_SDR, pass through the lead unchanged and output immediately with no additional routing.\n\nOnly perform ownership routing logic if input action is not any UNQUALIFIED status or ASSIGN_TO_SAME_INBOUND_SDR or PAUSE_AT_WORKING_STATUS.\n\nCopy all ids values and contact_updates values from input to output, updating and adding to them as you find related records.\n\nYour routing determination follows a specific decision tree checking conditions in order.\n\nDECISION TREE OVERVIEW - Follow this exact sequence. Details for how to execute each step are below:\nFirst, check if the request is for multiple products.\nSecond, default to Inbound SDR assignment if required.\n\n---\n<CONDITION ONE: MULTIPLE PRODUCTS OVERRIDE>\nIf a lead is requesting multiple products, override any previous action and the output action should be ASSIGN_TO_INBOUND_SDR_ROUND_ROBIN.\nCheck: If the lead is requesting multiple products (the current lead is requesting {{ $('Opportunity Product Map').first().json.allProducts }})\n<If multiple products>\n<multiple and related_engagement_record check>\nIf the lead is for multiple products and the lead json ids includes 'related_engagement_record', check if 'related_engagement_record' has Inbound or EAM in its name. If it contains Inbound or EAM, bypass CONDITION ONE: MULTIPLE PRODUCTS OVERRIDE. If it does not, change related_engagement_record to an empty string, and make the ID of the 'engagement_record_needs_closing' the related_engagement_record.\n</related_engagement_record check>\n\nReason is \"Multiple Products\".\nAction is ASSIGN_TO_INBOUND_SDR_ROUND_ROBIN.\nStop decision tree and output.\n\n<if multiple products>\n\n</CONDITION ONE: MULTIPLE PRODUCTS>\n\n\n\nCONDITION SEVEN: DEFAULT TO INBOUND SDR\n\nThis is the action if no conditions were matched, and the action output is still CONTINUE_CHECKS. IF the output is anything other than CONTINUE_CHECKS at this point, pass through the lead  and output immediately.\n\nIf NO existing Contact and Account was found in input (contact id and target_account id and parent account are empty strings):\n\nSet action to PAUSE_AT_WORKING_STATUS for human review.\n\nInclude in reasoning: that no existing relationships were found, so a new Contact and possibly a new Account must be created, and the lead will be assigned to Inbound SDR round robin.\n\n\nIf an existing Contact and Account were found but no ownership conditions matched:\nSet action to ASSIGN_TO_INBOUND_SDR_ROUND_ROBIN.\n\nInclude in reasoning: that the lead has relationships found, but no existing opportunity or ER ownership applies, so it defaults to round robin. A new ER should be created on the target Account including lead products and persona, with a Email to the assignee that includes the Contact link, products, campaign, and notes.\n\n\nREASONING REQUIREMENTS\n\nYour reasoning array must include for every condition checked:\nWhich condition number or section was evaluated.\nWhat Salesforce records were found with specific Ids.\nWhy each condition did or did not match.\nWhich condition ultimately matched and why that determined the final action.\nWhat notifications or conversions are required.\nDo not include any SOSL or SOQL ran.\n\nFINAL OUTPUT REQUIREMENTS\n\nThe action field must be exactly one of these values:\nUNQUALIFIED_BAD_DATA\nUNQUALIFIED_GEOGRAPHY\nUNQUALIFIED_NO_ORG_VERIFICATION\nUNQUALIFIED_PRODUCT_PARTNER\nUNQUALIFIED_COMMERCIAL_NOT_ALLOWED\nPAUSE_AT_WORKING_STATUS\nCONVERT_TO_EXISTING_SALES_OPP\nCONVERT_TO_EXISTING_ER_WITH_ACTIVITY\nCLOSE_INACTIVE_ER_PASS_TO_INBOUND\nCREATE_NEW_ER_ASSIGN_TO_OUTBOUND_SDR\nASSIGN_TO_INBOUND_SDR_ROUND_ROBIN\nASSIGN_TO_SAME_INBOUND_SDR\nCONVERT_TO_EXISTING_CUSTOMER_OPP\nEmail_ACCOUNT_MANAGER_SALES_OPS_EXCEPTION\nNOTIFY_CSM_EAM_CONVERT_TO_CONTACT\nCREATE_NEW_CONTACT_NO_MATCH\n\nThe ids object must contain:\nparent_account: Parent Account Id ({{ $('Consolidate Data').first().json.output.ids.parent_account }}) or empty string.\ntarget_account: Target Account Id ({{ $('Consolidate Data').first().json.output.ids.target_account }}) or empty string.\ncontact: Contact Id ({{ $('Consolidate Data').first().json.output.ids.contact }}) or empty string.\nrelated_opportunity: Opportunity Id if found or empty string.\nrelated_engagement_record: ER Opportunity Id if found or empty string.\n\nValidate that your final action recommendation aligns with your reasoning.\n\nThe contact_updates object must contain any field name keys with update values from the relationships agent input, or remain an empty object {}.\n\nThe reason field must be a single-sentence summary of the final routing decision.\nOutput only the JSON object with no surrounding text, code blocks, or markdown formatting.\n\n",
+        "hasOutputParser": true,
+        "needsFallback": true,
+        "options": {
+          "maxIterations": 60
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        3424,
+        160
+      ],
+      "id": "fb0d5f59-8406-4520-ada8-3daf31051459",
+      "name": "LPA Agent - Routing",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f1985de8-b95b-40f9-8ba1-a80de08e38b0",
+              "leftValue": "={{ $json.output.action }}",
+              "rightValue": "CONTINUE_CHECKS",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1792,
+        -368
+      ],
+      "id": "06b7beba-7d21-419b-94ce-60d746cc0a6f",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f1985de8-b95b-40f9-8ba1-a80de08e38b0",
+              "leftValue": "={{ $json.output.action }}",
+              "rightValue": "CONTINUE_CHECKS",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2448,
+        -48
+      ],
+      "id": "ecae70b7-e8ce-49e4-9ea9-a5bb6b30e79d",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e27f9df1-1782-42b8-b489-a3b06120b624",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3104,
+        -48
+      ],
+      "id": "c051534c-4cc2-4ae1-a27e-83fc9c8f14e4",
+      "name": "Map If Data"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-haiku-4.5",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2416,
+        896
+      ],
+      "id": "c026bfcc-46e2-4c26-a7d2-03f9936b20df",
+      "name": "Haiku 4.5 - Routing",
+      "credentials": {
+        "openRouterApi": {
+          "id": "KTgj0Hs61huy8abq",
+          "name": "OpenRouter AIE:LPA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bf1932f9-9919-45d7-9b67-92509f7e8c39",
+              "leftValue": "={{ $('Get Lead').first().json.MQL_Code__c }}",
+              "rightValue": "RFD",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "a0b815e8-5d31-4e95-b9d9-6d51c58972f9",
+              "leftValue": "={{ $('Get Lead').first().json.MQL_Code__c }}",
+              "rightValue": "RFI",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "06002024-aaf9-43a3-bf7e-839f7bf424e8",
+              "leftValue": "={{ $('Get Lead').first().json.MQL_Code__c }}",
+              "rightValue": "OQR",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5904,
+        -480
+      ],
+      "id": "99b6f864-c998-46d9-bf53-caae1fca1b67",
+      "name": "Warm or Hot"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA",
+          "mode": "list",
+          "cachedResultName": "Lead Passing - Round Robin",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 230615052,
+          "mode": "list",
+          "cachedResultName": "Hot",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit#gid=230615052"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        6144,
+        -640
+      ],
+      "id": "6009c840-1207-4d2e-9d95-d3be7861e607",
+      "name": "Get LPA RR (Hot)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "c3J8zwCMhjGYT8bp",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node script for round-robin lead assignment\n\n// Get input data from previous node\nconst inputData = $input.all().map(item => item.json);\n\nfunction assignLead(users) {\n  // Create a working copy of the data\n  const updatedUsers = users.map(user => ({ ...user }));\n  \n  let assignedUser = null;\n  \n  // Calculate total leads (Leads + SkippedOOOLeads) for each user\n  const usersWithTotal = updatedUsers.map(user => ({\n    ...user,\n    totalLeads: (user.Leads || 0) + (user.SkippedOOOLeads || 0)\n  }));\n  \n  // Sort by totalLeads (ascending), then by row_number (ascending) for tie-breaking\n  const sortedUsers = [...usersWithTotal].sort((a, b) => {\n    if (a.totalLeads !== b.totalLeads) {\n      return a.totalLeads - b.totalLeads;\n    }\n    return a.row_number - b.row_number;\n  });\n  \n  // Find the user to assign the lead to\n  for (const sortedUser of sortedUsers) {\n    // Find the corresponding user in our updatedUsers array\n    const userIndex = updatedUsers.findIndex(u => u.row_number === sortedUser.row_number);\n    const user = updatedUsers[userIndex];\n    \n    // Check if user is OOO\n    const isOOO = user.OOO && user.OOO.trim() !== '';\n    \n    if (isOOO) {\n      // Increment SkippedOOOLeads and continue looking\n      updatedUsers[userIndex].SkippedOOOLeads = (user.SkippedOOOLeads || 0) + 1;\n    } else {\n      // This user gets the lead\n      updatedUsers[userIndex].Leads = (user.Leads || 0) + 1;\n      assignedUser = user.Email;\n      break;\n    }\n  }\n  \n  // Remove the temporary totalLeads property from output\n  const cleanedUsers = updatedUsers.map(({ totalLeads, ...rest }) => rest);\n  \n  return {\n    updatedUsers: cleanedUsers,\n    assignedTo: assignedUser\n  };\n}\n\n// Run the assignment\nconst result = assignLead(inputData);\n\n// Return in n8n format\nreturn {\n  json: {\n    assignedTo: result.assignedTo,\n    updatedUsers: result.updatedUsers\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6400,
+        -528
+      ],
+      "id": "667389b3-4f93-4b0f-a9e7-f595d4f08269",
+      "name": "Identify Owner"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bf1932f9-9919-45d7-9b67-92509f7e8c39",
+              "leftValue": "={{ $('Get Lead').first().json.MQL_Code__c }}",
+              "rightValue": "RFD",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "a0b815e8-5d31-4e95-b9d9-6d51c58972f9",
+              "leftValue": "={{ $('Get Lead').first().json.MQL_Code__c }}",
+              "rightValue": "RFI",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "06002024-aaf9-43a3-bf7e-839f7bf424e8",
+              "leftValue": "={{ $('Get Lead').first().json.MQL_Code__c }}",
+              "rightValue": "OQR",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        8080,
+        -544
+      ],
+      "id": "c937b965-72b3-4d3e-9df7-2648686e0130",
+      "name": "Warm or Hot W"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA",
+          "mode": "list",
+          "cachedResultName": "Lead Passing - Round Robin",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 230615052,
+          "mode": "list",
+          "cachedResultName": "Hot",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit#gid=230615052"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "OOO",
+              "displayName": "OOO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Leads",
+              "displayName": "Leads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SkippedOOOLeads",
+              "displayName": "SkippedOOOLeads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        8464,
+        -640
+      ],
+      "id": "a7f5723a-bfef-4e58-96c4-eebb5ad64583",
+      "name": "Update Hot",
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "c3J8zwCMhjGYT8bp",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA",
+          "mode": "list",
+          "cachedResultName": "Lead Passing - Round Robin",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Warm",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "OOO",
+              "displayName": "OOO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Leads",
+              "displayName": "Leads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SkippedOOOLeads",
+              "displayName": "SkippedOOOLeads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        8480,
+        -480
+      ],
+      "id": "cfd7c294-a0fc-4b15-a8fc-4c846cbdd9b1",
+      "name": "Update Warm",
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "c3J8zwCMhjGYT8bp",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $('Identify Owner').first().json.updatedUsers"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8288,
+        -640
+      ],
+      "id": "8496e29f-153b-4ccf-97ef-29a6a60edf4d",
+      "name": "Map Array for Wr"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        6624,
+        -528
+      ],
+      "id": "dc419c91-2037-4b52-9fef-3c164e2b3eb7",
+      "name": "Inbound Owner"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA",
+          "mode": "list",
+          "cachedResultName": "Lead Passing - Round Robin",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Warm",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        6160,
+        -384
+      ],
+      "id": "088a806c-013e-4c10-aae5-1ac2e38325a7",
+      "name": "Get LPA RR (Warm)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "c3J8zwCMhjGYT8bp",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $('Identify Owner').first().json.updatedUsers"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        8288,
+        -480
+      ],
+      "id": "cd35f3d3-64e4-48c1-9287-4c9b46ee059e",
+      "name": "Map Array for Wr1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA",
+          "mode": "list",
+          "cachedResultName": "Lead Passing - Round Robin",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 233615893,
+          "mode": "list",
+          "cachedResultName": "Audit",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit#gid=233615893"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "LeadId": "={{ $('Get Lead').first().json.Id }}",
+            "SDR": "={{ $('Inbound Owner').first().json.assignedTo }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "LeadId",
+              "displayName": "LeadId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SDR",
+              "displayName": "SDR",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        8832,
+        -768
+      ],
+      "id": "4e3ba110-f2e9-4c12-a419-838a844055c7",
+      "name": "Audit",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "c3J8zwCMhjGYT8bp",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bb6f08f7-607f-43d9-9fa2-790d555517b2",
+              "leftValue": "={{ $('Outcome').first().json.outcome.action }}",
+              "rightValue": "CLOSE_INACTIVE_ER_PASS_TO_INBOUND",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "2561f36d-cde7-43b3-a2eb-2a74ae8a16a2",
+              "leftValue": "={{ $('Outcome').first().json.outcome.action }}",
+              "rightValue": "ASSIGN_TO_INBOUND_SDR_ROUND_ROBIN",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5696,
+        -208
+      ],
+      "id": "ae4ad536-b550-4c3f-9914-86aee9f82064",
+      "name": "Should Round Robin"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1928d720-4003-4bfb-98f9-940fdf1c02cc",
+              "leftValue": "={{ $('Get Segment').first().json.Segment__c }}",
+              "rightValue": "EGM-Named",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5376,
+        -32
+      ],
+      "id": "300d2728-209e-4dba-9a37-36f30066a0d8",
+      "name": "EGM-Named"
+    },
+    {
+      "parameters": {
+        "resource": "search",
+        "query": "=SELECT Segment__c\nFROM Account\nWHERE Id = '{{ $json.outcome.ids.parent_account }}'"
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        5168,
+        -32
+      ],
+      "id": "3fc78c0f-5334-4ed4-b3df-03b3e81bec91",
+      "name": "Get Segment",
+      "alwaysOutputData": true,
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "qpAKqo2RIDT7yWnl",
+          "name": "Salesforce PROD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let data = {}\n\nif (typeof $('Consolidate Data').first().json.output === 'string') {\n  data = { output: JSON.parse($('Consolidate Data').first().json.output) }\n} else {\n  data = $('Consolidate Data').first().json\n}\n\nreturn {...data}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        208
+      ],
+      "id": "5cadc125-899e-4614-984f-b1c7a0441aac",
+      "name": "Parse Output Json"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a5e83bda-71c8-4760-ba22-544010991c57",
+              "leftValue": "={{ $('Identify Owner').isExecuted }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "a1307bb0-0b25-4fc5-967c-4a8870085127",
+              "leftValue": "={{ $('Invoke a flow').isExecuted }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        7792,
+        -304
+      ],
+      "id": "7abb1f06-778d-4443-b8c6-b59df27e293d",
+      "name": "Should Write to Sheets",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resource": "account",
+        "operation": "get",
+        "accountId": "={{ $json.output.ids.target_account }}"
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        -1952,
+        208
+      ],
+      "id": "7f396eaa-a314-40d9-896e-791100ce76db",
+      "name": "Get an account",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "qpAKqo2RIDT7yWnl",
+          "name": "Salesforce PROD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "search",
+        "query": "=Select ID, Product_Interest__c, Secondary_Product_of_Interest__c from Opportunity where celigo_sfnsio__End_User__c = '{{ $('Get an account').first().json.ParentId }}' and Isclosed = FALSE"
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        -1744,
+        208
+      ],
+      "id": "2a1e8d2d-314f-4282-873d-f7faa144b652",
+      "name": "Perform a query",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "qpAKqo2RIDT7yWnl",
+          "name": "Salesforce PROD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * n8n Code node (JavaScript)\n *\n * Local Government is identified by Account.Industry = \"Local Government\"\n * (was previously Industry_Segmentation__c LIKE 'GOV-LOC-*').\n *\n * Website and Web Accessibility leads for Local Government route directly to CP.\n *\n * Existing MarkOps override still applies to:\n * - scoped leads in target segmentations\n * - except the Local Government carveout for Websites + Accessibility\n */\n\nfunction norm(v) {\n  if (v === null || v === undefined) return \"\";\n  return String(v).trim();\n}\n\nfunction normLower(v) {\n  return norm(v).toLowerCase();\n}\n\nfunction truthyStatus(v) {\n  const s = normLower(v);\n  return (\n    s === \"true\" ||\n    s === \"yes\" ||\n    s === \"y\" ||\n    s === \"customer\" ||\n    s === \"active\" ||\n    s === \"current\" ||\n    s === \"1\"\n  );\n}\n\n/**\n * Exact matching for picklists / multi-select picklists.\n * Prevents \"Accessibility\" from matching \"PDF Accessibility\".\n */\nfunction splitMultiSelect(listLike) {\n  const s = norm(listLike);\n  if (!s) return [];\n  return s\n    .split(\";\")\n    .map((x) => x.trim())\n    .filter(Boolean);\n}\n\nfunction containsValue(listLike, value) {\n  const target = normLower(value);\n  return splitMultiSelect(listLike).some((v) => normLower(v) === target);\n}\n\n/**\n * Try to find the opp array regardless of exact key name.\n */\nfunction getOppArray(rootJson) {\n  const candidateKeys = [\n    \"Opportunities\",\n    \"OpportunityRecords\",\n    \"records\",\n    \"opps\",\n    \"opportunities\",\n  ];\n\n  for (const k of candidateKeys) {\n    if (Array.isArray(rootJson?.[k])) return rootJson[k];\n  }\n\n  if (Array.isArray(rootJson)) return rootJson;\n  return [];\n}\n\nfunction isWebsiteOpp(opp) {\n  return (\n    containsValue(opp?.Product_Interest__c, \"CivicEngage\") ||\n    containsValue(opp?.Secondary_Product_of_Interest__c, \"CivicEngage\")\n  );\n}\n\nconst STREAMLINE_SEGMENTATIONS = new Set([\n  // Special District\n  \"GOV-SPC-ELECTIONS\",\n  \"GOV-SPC-FIRE\",\n  \"GOV-SPC-FIRE-VOL\",\n  \"GOV-SPC-FLOOD\",\n  \"GOV-SPC-HEALTH\",\n  \"GOV-SPC-LIBRARIES\",\n  \"GOV-SPC-MILITARY\",\n  \"GOV-SPC-NATURALRES\",\n  \"GOV-SPC-TRANSPORT\",\n  \"GOV-SPC-UTILITIES\",\n  \"GOV-SPC-UTILITIES-COOP\",\n  \"GOV-SPC-OTHER\",\n\n  // EDU / K12\n  \"EDU-PUB-DISTRICT\",\n  \"EDU-PUB-SCHOOLK12\",\n  \"EDU-PUB-CHARTER\",\n  \"EDU-PUB-HIGHERED\",\n  \"EDU-PRI-DISTRICT\",\n  \"EDU-PRI-SCHOOLK12\",\n  \"EDU-PRI-HIGHERED\",\n  \"EDU-SRV\",\n  \"EDU-AGENCY\",\n\n  // Healthcare\n  \"HEALTH-HOSP\",\n  \"HEALTH-HOSP-FOIA\",\n  \"HEALTH-HOSP-NONFOIA\",\n  \"HEALTH-LTC\",\n  \"HEALTH-SRV\",\n\n  // Commercial\n  \"COM-FIN\",\n  \"COM-LEGAL\",\n  \"COM-MANU\",\n\n  // Tribal / Non-profit proxy per MarkOps\n  \"OTH-OTH\",\n]);\n\nfunction getSegmentationBucket(seg) {\n  if (!seg) return \"\";\n\n  if (seg.startsWith(\"GOV-SPC-\")) return \"Special District\";\n  if (seg.startsWith(\"EDU-\")) return \"Education\";\n  if (seg.startsWith(\"HEALTH-\")) return \"Healthcare\";\n  if (seg.startsWith(\"COM-\")) return \"Commercial\";\n  if (seg === \"OTH-OTH\") return \"Tribal / Non-profit\";\n\n  return \"\";\n}\n\n// --- Begin main ---\nconst item0 = $('Get an account').first().json;\nconst lead = $(\"Get Lead\").first().json;\n\n// Account fields\nconst industrySegmentation = norm(item0.Industry_Segmentation__c);\nconst accountIndustry = norm(item0.Industry);\n\nconst populationRaw = item0.Population__c;\nconst accountPopulation = Number(populationRaw);\nconst hasPopulation = Number.isFinite(accountPopulation);\n\nconst isWebsitesCustomer = truthyStatus(item0.CivicEngage__c);\nconst isAccessibilityCustomer = truthyStatus(item0.Accessibility__c);\n\n// Lead fields\nconst leadPrimaryPOI = norm(lead.Primary_Product_Interest__c);\nconst leadPOI = norm(lead.Products_of_Interest__c);\n\n// Lead type detection\nconst isWebsiteLead =\n  containsValue(leadPrimaryPOI, \"CivicEngage\") ||\n  containsValue(leadPOI, \"CivicEngage\");\n\nconst isWebAccessibilityLead =\n  containsValue(leadPrimaryPOI, \"Accessibility\") ||\n  containsValue(leadPOI, \"Accessibility\");\n\nconst isPDFAccessibilityLead =\n  containsValue(leadPrimaryPOI, \"PDF Accessibility\") ||\n  containsValue(leadPOI, \"PDF Accessibility\");\n\nconst isScopedLead =\n  isWebsiteLead || isWebAccessibilityLead || isPDFAccessibilityLead;\n\n// Local Government carveout — now driven by Industry, not Industry_Segmentation__c\nconst isLocalGovernment = normLower(accountIndustry) === \"local government\";\nconst isLocalGovWebsiteOrAccessibilityLead =\n  isLocalGovernment && (isWebsiteLead || isWebAccessibilityLead);\n\nif ($('LPA Agent - Qualification').first().json.output.action.includes(\"UNQUAL\")) {\n  return [\n    {\n      json: {\n        ...item0,\n        route_bucket: \"CP\",\n        route_reason: \"Unqualified lead.\",\n      },\n    },\n  ];\n}\n\nif (!isScopedLead) {\n  return [\n    {\n      json: {\n        ...item0,\n        route_bucket: \"CP\",\n        route_reason:\n          \"Not a Websites, Accessibility, or PDF Accessibility lead (default CP).\",\n      },\n    },\n  ];\n}\n\n// Opp scan\nconst opps = getOppArray(item0);\nconst websiteOpps = opps.filter(isWebsiteOpp);\nconst hasWebsiteEcosystemOpp = websiteOpps.length > 0;\n\n// New segmentation-based rule\nconst isStreamlineSegmentation =\n  STREAMLINE_SEGMENTATIONS.has(industrySegmentation);\n\nconst segmentationBucket = getSegmentationBucket(industrySegmentation);\n\n// Legacy fallback logic\nconst isGovernment = normLower(accountIndustry) === \"government\";\nconst popGte50k = hasPopulation && accountPopulation >= 50000;\nconst popLt50k = hasPopulation && accountPopulation < 50000;\n\nfunction getLeadTypeLabel() {\n  const labels = [];\n  if (isWebsiteLead) labels.push(\"Websites\");\n  if (isWebAccessibilityLead) labels.push(\"Accessibility\");\n  if (isPDFAccessibilityLead) labels.push(\"PDF Accessibility\");\n  return labels.join(\" + \");\n}\n\nlet route_bucket = \"CP\";\nlet route_reason = \"\";\nconst leadTypeLabel = getLeadTypeLabel();\n\n/**\n * Decision tree:\n * 1) Local Government Websites / Accessibility carveout -> CP\n * 2) New MarkOps rule: other scoped lead + target segmentation -> Streamline\n * 3) Else preserve prior behavior as fallback\n */\nif (isLocalGovWebsiteOrAccessibilityLead) {\n  route_bucket = \"CP\";\n  route_reason =\n    `${leadTypeLabel} lead + Local Government industry -> CP per standard routing rule.`;\n} else if (isStreamlineSegmentation) {\n  route_bucket = \"Streamline\";\n  route_reason =\n    `${leadTypeLabel} lead + ${segmentationBucket || industrySegmentation} segmentation -> Streamline per MarkOps rule.`;\n} else if (hasWebsiteEcosystemOpp) {\n  route_bucket = \"CP\";\n  route_reason =\n    `${leadTypeLabel} lead + open website ecosystem opp found (CivicEngage present on at least one opp).`;\n} else if (isWebsitesCustomer && isAccessibilityCustomer) {\n  route_bucket = \"CP\";\n  route_reason =\n    `${leadTypeLabel} lead + CP Website & Accessibility customer.`;\n} else if (!isWebsitesCustomer) {\n  if (isGovernment && popGte50k) {\n    route_bucket = \"Streamline\";\n    route_reason =\n      `${leadTypeLabel} lead + Government >= 50k + not CP Website customer.`;\n  } else if (isGovernment && (popLt50k || !hasPopulation)) {\n    route_bucket = \"Streamline\";\n    route_reason =\n      `${leadTypeLabel} lead + Government < 50k (or unknown pop) + not CP Website customer.`;\n  } else {\n    route_bucket = \"Streamline\";\n    route_reason =\n      `${leadTypeLabel} lead + non-website customer fallback -> Streamline.`;\n  }\n} else {\n  route_bucket = \"CP\";\n  route_reason =\n    `${leadTypeLabel} lead + Websites customer, but no website opp found; default CP.`;\n}\n\nreturn [\n  {\n    json: {\n      ...item0,\n      route_bucket,\n      route_reason,\n      _routing_debug: {\n        leadPrimaryPOI,\n        leadPOI,\n        isWebsiteLead,\n        isWebAccessibilityLead,\n        isPDFAccessibilityLead,\n        isScopedLead,\n        isLocalGovernment,\n        isLocalGovWebsiteOrAccessibilityLead,\n        industry: accountIndustry,\n        industrySegmentation,\n        segmentationBucket,\n        isStreamlineSegmentation,\n        accountPopulation: hasPopulation ? accountPopulation : null,\n        isWebsitesCustomer,\n        isAccessibilityCustomer,\n        opp_count: opps.length,\n        website_opp_count: websiteOpps.length,\n        website_opp_ids: websiteOpps.map((o) => o.Id).filter(Boolean),\n      },\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1536,
+        208
+      ],
+      "id": "6c8bf122-8c98-4e13-a7cd-5c6a640b704e",
+      "name": "StreamlineRoutingRules",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9a654d07-b618-4cc6-8983-2b569036461e",
+              "name": "output",
+              "value": "={{ {...$('LPA Agent - Relationships').first().json.output} }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -464,
+        288
+      ],
+      "id": "35118391-e2f9-4361-999f-18f986b10227",
+      "name": "Remap Relationship Output"
+    },
+    {
+      "parameters": {
+        "resource": "flow",
+        "apiName": "PassInboundLead",
+        "variablesUi": {
+          "variablesValues": [
+            {
+              "name": "Action",
+              "value": "={{ $('StreamlineRoutingRules').first().json.route_bucket }}"
+            },
+            {
+              "name": "contactID",
+              "value": "={{ $('Consolidate Data').first().json.output.ids.contact }}"
+            },
+            {
+              "name": "parentID",
+              "value": "={{ $('Consolidate Data').first().json.output.ids.parent_account }}"
+            },
+            {
+              "name": "leadID",
+              "value": "={{ $('Get Lead').first().json.Id }}"
+            },
+            {
+              "name": "Reason",
+              "value": "={{ $('StreamlineRoutingRules').first().json.route_reason }}"
+            },
+            {
+              "name": "targetagencyID",
+              "value": "={{ $('Get an account').first().json.Id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        400,
+        -80
+      ],
+      "id": "4606330b-333b-4b50-8684-31fcefc135b7",
+      "name": "Invoke a Flow (Streamline Route)",
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "qpAKqo2RIDT7yWnl",
+          "name": "Salesforce PROD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5a5026fe-5ae1-47e6-a0b6-651397de8863",
+              "leftValue": "={{ $('StreamlineRoutingRules').first().json.route_bucket }}",
+              "rightValue": "CP",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "6f0e0d6f-4941-49bb-8513-1264b880cc39",
+              "leftValue": "={{ $('Consolidate Data').first().json.output.action }}",
+              "rightValue": "PAUSE",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "23b819f5-20a1-4d94-8ad8-c8f846fa20c0",
+              "leftValue": "={{ $('Consolidate Data').first().json.output.action }}",
+              "rightValue": "UNQUAL",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        400,
+        192
+      ],
+      "id": "4688a54a-e6d2-472e-a64b-be58a9e67795",
+      "name": "CP or Streamline",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "zLNHAhcVhaoaqGS1",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/zLNHAhcVhaoaqGS1",
+          "cachedResultName": "Prod — LPA Production - Eval"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -5280,
+        -192
+      ],
+      "id": "dab020d8-700c-4236-b731-ef6842ad066c",
+      "name": "Call 'LPA Production - Eval'",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "ePyuiYPdVPMMuTvD",
+          "mode": "list",
+          "cachedResultName": "LPA Debounce",
+          "cachedResultUrl": "/projects/etn2RNdzupZBMQdT/datatables/ePyuiYPdVPMMuTvD"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lead_id": "={{ $('Webhook').first().json.query.id }}",
+            "ex_id": "={{ $execution.id }}"
+          },
+          "matchingColumns": [
+            "lead_id"
+          ],
+          "schema": [
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ex_id",
+              "displayName": "ex_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -5520,
+        -192
+      ],
+      "id": "2753562c-1584-4fe4-b390-23101c46804b",
+      "name": "Debounce"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "66c705b4-c7cd-4950-b208-e94838edd906",
+              "leftValue": "={{$('Get Debounce').all()}}",
+              "rightValue": 40,
+              "operator": {
+                "type": "array",
+                "operation": "lengthGt",
+                "rightType": "number"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -6080,
+        -176
+      ],
+      "id": "179fa2d8-7a25-4980-a82f-4a8263d09141",
+      "name": "If2",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ePyuiYPdVPMMuTvD",
+          "mode": "list",
+          "cachedResultName": "LPA Debounce",
+          "cachedResultUrl": "/projects/etn2RNdzupZBMQdT/datatables/ePyuiYPdVPMMuTvD"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -6288,
+        -176
+      ],
+      "id": "2b2631ba-6a76-4857-b0a5-9427b745b036",
+      "name": "Get Debounce",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ePyuiYPdVPMMuTvD",
+          "mode": "list",
+          "cachedResultName": "LPA Debounce",
+          "cachedResultUrl": "/projects/etn2RNdzupZBMQdT/datatables/ePyuiYPdVPMMuTvD"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "lead_id",
+              "keyValue": "={{ $('Webhook').item.json.query.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        7728,
+        224
+      ],
+      "id": "1d5b2f08-7481-4e48-b2b0-c3a48e40d3a6",
+      "name": "Delete Debounce",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "ePyuiYPdVPMMuTvD",
+          "mode": "list",
+          "cachedResultName": "LPA Debounce",
+          "cachedResultUrl": "/projects/etn2RNdzupZBMQdT/datatables/ePyuiYPdVPMMuTvD"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "lead_id",
+              "keyValue": "={{ $('Webhook').item.json.query.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        -288
+      ],
+      "id": "e291cdae-d0ec-4e7b-a22b-8e5befc4e194",
+      "name": "Delete Debounce1",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://prxy.civicplusai.solutions/debounce",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $('Webhook').item.json.webhookUrl }}?id={{ $('Webhook').item.json.query.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -5856,
+        -416
+      ],
+      "id": "dbd28469-2989-4a96-8785-67150142504e",
+      "name": "Debounce1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "5yZ2OrC77zKg37BT",
+          "name": "Proxy Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "reese.thompson@civicplus.com",
+        "subject": "Debounce",
+        "emailType": "text",
+        "message": "Debounce Triggered",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -5648,
+        -416
+      ],
+      "id": "392bf10f-7005-443e-abcd-0c1621e3f790",
+      "name": "Send a message",
+      "webhookId": "440c781f-0cc4-49da-a01d-e6d1b500d778",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gTRjajfxXxGuR720",
+          "name": "Gmail Email Auth"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "https://civicplusaienablement.app.n8n.cloud/webhook/efe900c8-e42d-458f-bd00-e1c6389619c8",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ $('Webhook Id').first().json.Id }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 3000
+        }
+      },
+      "id": "b11c00c9-46d9-4ecf-b826-70cc45e80307",
+      "name": "Fire Refactor Shadow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3344,
+        -464
+      ],
+      "onError": "continueRegularOutput",
+      "notes": "Fire-and-forget shadow trigger: GETs the refactor's webhook with the same lead id. continue-on-error + 3s timeout so it can never affect live routing. Requires the refactor workflow to be ACTIVE."
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = ($('Get Lead').first().json) || {};\nconst oc = (($('Outcome').first().json) || {}).outcome || {};\nconst action = oc.action || '(none)';\nconst reasoning = Array.isArray(oc.reasoning) ? oc.reasoning.join('\\n') : (oc.reason || '');\nconst execUrl = 'https://civicplusaienablement.app.n8n.cloud/workflow/LVSE0kQfR6WkVtEO/executions/' + $execution.id;\nconst desc = [lead.Email, lead.Company, lead.Primary_Product_Interest__c].filter(Boolean).join(' · ');\nreturn [{ json: { 'Lead ID': lead.Id || '', 'Lead': desc, 'PROD Result': action, 'PROD Reasoning': reasoning, 'PROD Execution': execUrl, 'PROD Logged At': $now.toISO() } }];"
+      },
+      "id": "c1ba62ff-60e9-4a05-9a53-8adb14b19dc9",
+      "name": "Build Prod Row (CP)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7808,
+        208
+      ],
+      "onError": "continueRegularOutput",
+      "notes": "Prod comparison row for the CP path (reads the Outcome node's action + reasoning)."
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = ($('Get Lead').first().json) || {};\nconst srr = ($('StreamlineRoutingRules').first().json) || {};\nconst bucket = srr.route_bucket || '(none)';\nconst reason = srr.route_reason || '';\nconst execUrl = 'https://civicplusaienablement.app.n8n.cloud/workflow/LVSE0kQfR6WkVtEO/executions/' + $execution.id;\nconst desc = [lead.Email, lead.Company, lead.Primary_Product_Interest__c].filter(Boolean).join(' · ');\nreturn [{ json: { 'Lead ID': lead.Id || '', 'Lead': desc, 'PROD Result': 'Streamline Route: ' + bucket, 'PROD Reasoning': reason, 'PROD Execution': execUrl, 'PROD Logged At': $now.toISO() } }];"
+      },
+      "id": "8f659712-f0b3-4af2-ac9b-97b001af85f1",
+      "name": "Build Prod Row (SL)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7808,
+        432
+      ],
+      "onError": "continueRegularOutput",
+      "notes": "Prod comparison row for the Streamline branch (prod delegates to the SF Streamline flow; logs route_bucket + route_reason)."
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA",
+          "mode": "list",
+          "cachedResultName": "Lead Passing - Round Robin",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1884560879,
+          "mode": "list",
+          "cachedResultName": "Parallel Testing",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1MXMMsU6IDvhiwfT2zJwPDMoR63CWAjdrFCjaDBNK2FA/edit#gid=1884560879"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "Lead ID"
+          ],
+          "schema": [
+            {
+              "id": "Lead ID",
+              "displayName": "Lead ID",
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "display": true,
+              "required": false,
+              "defaultMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e108436c-669d-4ec7-90cc-30410d8f686b",
+      "name": "Log Prod Result",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        8080,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "c3J8zwCMhjGYT8bp",
+          "name": "Google Sheets"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "Prod comparison logger. appendOrUpdate on Lead ID into the Parallel Testing tab. Fed by both Build Prod Row nodes (only one fires per lead)."
+    },
+    {
+      "parameters": {
+        "resource": "search",
+        "query": "={{ \"SELECT Id, DocAccess_Deal_Owner__c FROM Account WHERE DocAccess_Deal_Owner__c = 'Diligent Partner' AND Id IN (\" + ([$('LPA Agent - Relationships').first().json.output.ids.target_account, $('LPA Agent - Relationships').first().json.output.ids.parent_account].filter(Boolean).map(id => \"'\" + id + \"'\").join(',') || \"'000000000000000000'\") + \")\" }}"
+      },
+      "id": "2387122f-d27d-4593-b4d3-0478d239491a",
+      "name": "Diligent Owner Check",
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        -1856,
+        400
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "qpAKqo2RIDT7yWnl",
+          "name": "Salesforce PROD"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "Target OR parent account DocAccess_Deal_Owner__c = Diligent Partner. alwaysOutputData so non-Diligent leads still flow onward."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dil-a",
+              "leftValue": "={{ $('Diligent Owner Check').all().filter(x => x.json && x.json.Id).length > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "dil-b",
+              "leftValue": "={{ ($('Get Lead').first().json.Primary_Product_Interest__c === 'PDF Accessibility') || (($('Get Lead').first().json.Products_of_Interest__c || '').split(';').map(s => s.trim()).includes('PDF Accessibility')) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4083d927-b188-4e5c-82ea-7dd2f0ba49a0",
+      "name": "Diligent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1648,
+        400
+      ],
+      "notes": "TRUE = Diligent-Partner account AND DocAccess lead -> short-circuit to DILIGENT."
+    },
+    {
+      "parameters": {
+        "resource": "flow",
+        "apiName": "PassInboundLead",
+        "variablesUi": {
+          "variablesValues": [
+            {
+              "name": "Action",
+              "value": "DILIGENT"
+            },
+            {
+              "name": "leadID",
+              "value": "={{ $('Get Lead').first().json.Id }}"
+            },
+            {
+              "name": "contactID",
+              "value": "={{ $('LPA Agent - Relationships').first().json.output.ids.contact }}"
+            },
+            {
+              "name": "parentID",
+              "value": "={{ $('LPA Agent - Relationships').first().json.output.ids.parent_account }}"
+            },
+            {
+              "name": "targetagencyID",
+              "value": "={{ $('LPA Agent - Relationships').first().json.output.ids.target_account }}"
+            },
+            {
+              "name": "Reason",
+              "value": "Diligent Partner - DocAccess partner lead (cannot pass)"
+            }
+          ]
+        }
+      },
+      "id": "2c9b6ad1-2377-40d4-b9ef-8dbfe310dd98",
+      "name": "Invoke Diligent Flow",
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        -1456,
+        304
+      ],
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "qpAKqo2RIDT7yWnl",
+          "name": "Salesforce PROD"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "LIVE: PassInboundLead with Action=DILIGENT for Diligent-partner DocAccess leads."
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = ($('Get Lead').first().json) || {};\nconst execUrl = 'https://civicplusaienablement.app.n8n.cloud/workflow/LVSE0kQfR6WkVtEO/executions/' + $execution.id;\nconst desc = [lead.Email, lead.Company, lead.Primary_Product_Interest__c].filter(Boolean).join(' · ');\nreturn [{ json: { 'Lead ID': lead.Id || '', 'Lead': desc, 'PROD Result': 'DILIGENT', 'PROD Reasoning': 'DocAccess lead + target/parent DocAccess_Deal_Owner__c = Diligent Partner -> partner lead we cannot pass; Action=DILIGENT, invoked PassInboundLead (short-circuit after Relationships).', 'PROD Execution': execUrl, 'PROD Logged At': $now.toISO() } }];"
+      },
+      "id": "b0ee1b2d-0250-4e0b-960a-48277edb2f4b",
+      "name": "Build Prod Row (Diligent)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1456,
+        480
+      ],
+      "onError": "continueRegularOutput",
+      "notes": "Logs DILIGENT to the Parallel Testing sheet."
+    }
+  ],
+  "pinData": {
+    "Lead": [
+      {
+        "json": {
+          "Id": "00QUh000013C6vzMAC"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Web MCP": {
+      "ai_tool": [
+        [
+          {
+            "node": "LPA Agent - Qualification",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Haiku": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LPA Agent - Qualification",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Relationships",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "LPA Agent - Qualification",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Relationships",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Simple Existing",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Existing",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Customer",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Routing",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead": {
+      "main": [
+        [
+          {
+            "node": "Get Debounce",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cached Lead": {
+      "main": [
+        [
+          {
+            "node": "ifCached",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ifCached": {
+      "main": [
+        [
+          {
+            "node": "Cached Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Opportunity Product Map",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cache Lead": {
+      "main": [
+        [
+          {
+            "node": "Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LPA Outcome": {
+      "main": [
+        [
+          {
+            "node": "ifSetCache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cached Outcome": {
+      "main": [
+        [
+          {
+            "node": "Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outcome": {
+      "main": [
+        [
+          {
+            "node": "Get Segment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Lead": {
+      "main": [
+        [
+          {
+            "node": "ifCache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Opportunity Product Map": {
+      "main": [
+        [
+          {
+            "node": "LPA Agent - Qualification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "z.ai GLM 4.6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LPA Agent - Qualification",
+            "type": "ai_languageModel",
+            "index": 1
+          },
+          {
+            "node": "LPA Agent - Relationships",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Vars": {
+      "main": [
+        [
+          {
+            "node": "Get Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ifCache": {
+      "main": [
+        [
+          {
+            "node": "Cached Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Opportunity Product Map",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ifSetCache": {
+      "main": [
+        [
+          {
+            "node": "Cache Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LPA Agent - Qualification": {
+      "main": [
+        [
+          {
+            "node": "LPA Agent - Relationships",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LPA Agent - Relationships": {
+      "main": [
+        [
+          {
+            "node": "Get an account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Debounce",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PRODUCTION Salesforce MCP": {
+      "ai_tool": [
+        [
+          {
+            "node": "LPA Agent - Qualification",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Relationships",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Simple Existing",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Existing",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Customer",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Routing",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Id": {
+      "main": [
+        [
+          {
+            "node": "Vars",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fire Refactor Shadow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ShouldCreateContact": {
+      "main": [
+        [
+          {
+            "node": "ContactFieldExists",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Remap Relationship Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ContactFieldExists": {
+      "main": [
+        [
+          {
+            "node": "Create a contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Missing Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Missing Fields": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a contact": {
+      "main": [
+        [
+          {
+            "node": "Update ACR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ContactIdMap": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update ACR": {
+      "main": [
+        [
+          {
+            "node": "ContactIdMap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate Data": {
+      "main": [
+        [
+          {
+            "node": "CP or Streamline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Invoke a flow": {
+      "main": [
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Should Write to Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Delete Debounce",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build Prod Row (CP)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execution Data": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LPA Agent - Simple Existing": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LPA Agent - Existing": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "z.ai GLM 4.": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LPA Agent - Simple Existing",
+            "type": "ai_languageModel",
+            "index": 1
+          },
+          {
+            "node": "LPA Agent - Existing",
+            "type": "ai_languageModel",
+            "index": 1
+          },
+          {
+            "node": "LPA Agent - Customer",
+            "type": "ai_languageModel",
+            "index": 1
+          },
+          {
+            "node": "LPA Agent - Routing",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "LPA Agent - Customer": {
+      "main": [
+        [
+          {
+            "node": "LPA Agent - Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LPA Agent - Routing": {
+      "main": [
+        [
+          {
+            "node": "LPA Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "LPA Agent - Existing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Map If Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "LPA Agent - Customer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Map If Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map If Data": {
+      "main": [
+        [
+          {
+            "node": "LPA Agent - Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Haiku 4.5 - Routing": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LPA Agent - Routing",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Simple Existing",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Existing",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "LPA Agent - Customer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Warm or Hot": {
+      "main": [
+        [
+          {
+            "node": "Get LPA RR (Hot)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get LPA RR (Warm)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get LPA RR (Hot)": {
+      "main": [
+        [
+          {
+            "node": "Identify Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify Owner": {
+      "main": [
+        [
+          {
+            "node": "Inbound Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Warm or Hot W": {
+      "main": [
+        [
+          {
+            "node": "Map Array for Wr",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Map Array for Wr1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Hot": {
+      "main": [
+        [
+          {
+            "node": "Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Warm": {
+      "main": [
+        [
+          {
+            "node": "Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Array for Wr": {
+      "main": [
+        [
+          {
+            "node": "Update Hot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inbound Owner": {
+      "main": [
+        [
+          {
+            "node": "Invoke a flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get LPA RR (Warm)": {
+      "main": [
+        [
+          {
+            "node": "Identify Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Array for Wr1": {
+      "main": [
+        [
+          {
+            "node": "Update Warm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Round Robin": {
+      "main": [
+        [
+          {
+            "node": "Warm or Hot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invoke a flow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EGM-Named": {
+      "main": [
+        [
+          {
+            "node": "Invoke a flow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Should Round Robin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Segment": {
+      "main": [
+        [
+          {
+            "node": "EGM-Named",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Output Json": {
+      "main": [
+        [
+          {
+            "node": "LPA Agent - Simple Existing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Write to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Warm or Hot W",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execution Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perform a query": {
+      "main": [
+        [
+          {
+            "node": "StreamlineRoutingRules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StreamlineRoutingRules": {
+      "main": [
+        [
+          {
+            "node": "ShouldCreateContact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remap Relationship Output": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CP or Streamline": {
+      "main": [
+        [
+          {
+            "node": "Parse Output Json",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invoke a Flow (Streamline Route)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Delete Debounce1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'LPA Production - Eval'": {
+      "main": [
+        [
+          {
+            "node": "Webhook Id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Debounce": {
+      "main": [
+        [
+          {
+            "node": "Call 'LPA Production - Eval'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Debounce1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Debounce",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Debounce": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Debounce1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prod Row (CP)": {
+      "main": [
+        [
+          {
+            "node": "Log Prod Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoke a Flow (Streamline Route)": {
+      "main": [
+        [
+          {
+            "node": "Build Prod Row (SL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prod Row (SL)": {
+      "main": [
+        [
+          {
+            "node": "Log Prod Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an account": {
+      "main": [
+        [
+          {
+            "node": "Diligent Owner Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Diligent Owner Check": {
+      "main": [
+        [
+          {
+            "node": "Diligent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Diligent?": {
+      "main": [
+        [
+          {
+            "node": "Invoke Diligent Flow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Perform a query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoke Diligent Flow": {
+      "main": [
+        [
+          {
+            "node": "Build Prod Row (Diligent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prod Row (Diligent)": {
+      "main": [
+        [
+          {
+            "node": "Log Prod Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "rygASdZeqSLngIMs",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true
+  },
+  "versionId": "76bccead-6baf-48cc-b8b0-7d71e5ca57e3",
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "3976b5025decfc38e41b31ed5386a0a3b238afb89e693eafc69c25a2c0e1dba8"
+  },
+  "nodeGroups": [],
+  "id": "LVSE0kQfR6WkVtEO",
+  "tags": []
+}

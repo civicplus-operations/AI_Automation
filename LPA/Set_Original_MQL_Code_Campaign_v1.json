@@ -1,0 +1,243 @@
+{
+  "actionCalls": [
+    {
+      "actionName": "SCG_ProcessBuilderAbort",
+      "actionType": "apex",
+      "connector": null,
+      "dataTypeMappings": [],
+      "description": null,
+      "elementSubtype": null,
+      "faultConnector": null,
+      "flowTransactionModel": "CurrentTransaction",
+      "inputParameters": [],
+      "label": "Do Nothing",
+      "locationX": 0,
+      "locationY": 0,
+      "name": "myRule_1_A1",
+      "nameSegment": "SCG_ProcessBuilderAbort",
+      "outputConfigParams": [],
+      "outputParameters": [],
+      "processMetadataValues": [],
+      "storeOutputAutomatically": null,
+      "versionSegment": null
+    }
+  ],
+  "apexPluginCalls": [],
+  "apiVersion": 61,
+  "assignments": [],
+  "choices": [],
+  "collectionProcessors": [],
+  "constants": [],
+  "decisions": [
+    {
+      "attributes": null,
+      "defaultConnector": {
+        "isGoTo": null,
+        "processMetadataValues": [],
+        "targetReference": "myRule_3_A1"
+      },
+      "defaultConnectorLabel": "FALSE_Disable Automation",
+      "description": null,
+      "elementSubtype": null,
+      "label": "Disable Automation",
+      "locationX": 0,
+      "locationY": 0,
+      "name": "myRule_1",
+      "processMetadataValues": [],
+      "rules": [
+        {
+          "attributes": null,
+          "conditionLogic": "and",
+          "conditions": [
+            {
+              "leftValueReference": "formula_TRUE_myRule_1",
+              "operator": "EqualTo",
+              "processMetadataValues": [],
+              "rightValue": {
+                "apexValue": null,
+                "booleanValue": true,
+                "dateTimeValue": null,
+                "dateValue": null,
+                "elementReference": null,
+                "formulaDataType": null,
+                "formulaExpression": null,
+                "numberValue": null,
+                "setupReference": null,
+                "setupReferenceType": null,
+                "sobjectValue": null,
+                "stringValue": null
+              }
+            }
+          ],
+          "connector": {
+            "isGoTo": null,
+            "processMetadataValues": [],
+            "targetReference": "myRule_1_A1"
+          },
+          "description": null,
+          "doesRequireRecordChangedToMeetCriteria": null,
+          "label": "TRUE_Disable Automation",
+          "name": "TRUE_myRule_1",
+          "processMetadataValues": []
+        }
+      ]
+    }
+  ],
+  "description": "Migrated from the Set Original MQL Code & Campaign process using multiple criteria.",
+  "dynamicChoiceSets": [],
+  "environments": null,
+  "exitRules": [],
+  "formulas": [
+    {
+      "dataType": "String",
+      "description": null,
+      "expression": "{!$Record.Campaign__c}",
+      "name": "formula_1_myRule_3_A1_2769923731",
+      "processMetadataValues": [],
+      "scale": null
+    },
+    {
+      "dataType": "String",
+      "description": null,
+      "expression": "TEXT({!$Record.MQL_Code__c})",
+      "name": "formula_2_myRule_3_A1_8045827316",
+      "processMetadataValues": [],
+      "scale": null
+    },
+    {
+      "dataType": "Boolean",
+      "description": null,
+      "expression": "{!$Record.SCG_Disable_Automation__c} \n|| CONTAINS($Setup.SCG_Disable_Automation__c.Process_Builders__c, \"|Lead|\")",
+      "name": "formula_TRUE_myRule_1",
+      "processMetadataValues": [],
+      "scale": null
+    }
+  ],
+  "interviewLabel": null,
+  "isAdditionalPermissionRequiredToRun": null,
+  "isOverridable": null,
+  "isTemplate": null,
+  "label": "Set Original MQL Code & Campaign",
+  "loops": [],
+  "migratedFromWorkflowRuleName": null,
+  "orchestratedStages": [],
+  "overriddenFlow": null,
+  "processMetadataValues": [
+    {
+      "name": "CanvasMode",
+      "value": {
+        "apexValue": null,
+        "booleanValue": null,
+        "dateTimeValue": null,
+        "dateValue": null,
+        "elementReference": null,
+        "formulaDataType": null,
+        "formulaExpression": null,
+        "numberValue": null,
+        "setupReference": null,
+        "setupReferenceType": null,
+        "sobjectValue": null,
+        "stringValue": "AUTO_LAYOUT_CANVAS"
+      }
+    }
+  ],
+  "processType": "AutoLaunchedFlow",
+  "recordCreates": [],
+  "recordDeletes": [],
+  "recordLookups": [],
+  "recordRollbacks": [],
+  "recordUpdates": [
+    {
+      "connector": null,
+      "description": null,
+      "elementSubtype": null,
+      "faultConnector": null,
+      "filterLogic": null,
+      "filters": [],
+      "inputAssignments": [
+        {
+          "field": "Original_Campaign__c",
+          "processMetadataValues": [],
+          "value": {
+            "apexValue": null,
+            "booleanValue": null,
+            "dateTimeValue": null,
+            "dateValue": null,
+            "elementReference": "formula_1_myRule_3_A1_2769923731",
+            "formulaDataType": null,
+            "formulaExpression": null,
+            "numberValue": null,
+            "setupReference": null,
+            "setupReferenceType": null,
+            "sobjectValue": null,
+            "stringValue": null
+          }
+        },
+        {
+          "field": "Original_MQL_Code__c",
+          "processMetadataValues": [],
+          "value": {
+            "apexValue": null,
+            "booleanValue": null,
+            "dateTimeValue": null,
+            "dateValue": null,
+            "elementReference": "formula_2_myRule_3_A1_8045827316",
+            "formulaDataType": null,
+            "formulaExpression": null,
+            "numberValue": null,
+            "setupReference": null,
+            "setupReferenceType": null,
+            "sobjectValue": null,
+            "stringValue": null
+          }
+        }
+      ],
+      "inputReference": "$Record",
+      "label": "Stamp Value",
+      "locationX": 0,
+      "locationY": 0,
+      "name": "myRule_3_A1",
+      "object": null,
+      "processMetadataValues": []
+    }
+  ],
+  "runInMode": null,
+  "screens": [],
+  "sourceTemplate": null,
+  "start": {
+    "connector": {
+      "isGoTo": null,
+      "processMetadataValues": [],
+      "targetReference": "myRule_1"
+    },
+    "description": null,
+    "doesRequireRecordChangedToMeetCriteria": null,
+    "elementSubtype": null,
+    "filterFormula": null,
+    "filterLogic": null,
+    "filters": [],
+    "label": null,
+    "locationX": 0,
+    "locationY": 0,
+    "name": null,
+    "object": "Lead",
+    "objectContainer": null,
+    "processMetadataValues": [],
+    "recordTriggerType": "Create",
+    "schedule": null,
+    "scheduledPaths": [],
+    "segment": null,
+    "triggerType": "RecordAfterSave"
+  },
+  "startElementReference": null,
+  "status": "Active",
+  "steps": [],
+  "subflows": [],
+  "textTemplates": [],
+  "timeZoneSidKey": null,
+  "transforms": [],
+  "triggerOrder": null,
+  "urls": null,
+  "variables": [],
+  "waits": []
+}
